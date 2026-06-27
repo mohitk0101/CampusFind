@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages – CampusFind</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">🔍</div>
+    <div class="brand-text"><div class="brand-name">CampusFind</div><div class="brand-sub">NIT Kurukshetra</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Navigation</div>
+    <div class="nav-item" data-href="/index.html"><span class="nav-icon">🏠</span> Dashboard</div>
+    <div class="nav-item" data-href="/create-post.html"><span class="nav-icon">➕</span> Report Item</div>
+    <div class="nav-item active" data-href="/chat.html"><span class="nav-icon">💬</span> Messages <span class="nav-badge nav-msg-badge hidden">0</span></div>
+    <div class="nav-section-label">My Account</div>
+    <div class="nav-item" data-href="/profile.html"><span class="nav-icon">👤</span> Profile</div>
+    <div class="nav-item" data-href="/my-items.html"><span class="nav-icon">📦</span> My Items</div>
+    <div class="nav-item" id="nav-admin" style="display:none" data-href="/admin.html"><span class="nav-icon">⚡</span> Admin Panel</div>
+    <div class="nav-item" data-action="logout"><span class="nav-icon">🚪</span> Logout</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user" id="sidebar-user">
+      <div class="sidebar-avatar"></div>
+      <div class="sidebar-user-info"><div class="user-name" id="user-name">User</div><div class="user-role" id="user-role">Student</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="topbar">
+    <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+    <div class="topbar-title">Messages</div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="notif-btn">🔔<span class="badge hidden" id="notif-badge">0</span></button>
+    </div>
+  </div>
+
+  <div class="chat-layout">
+    <!-- Conversations List -->
+    <div class="conversations-list" id="conversations-list">
+      <div style="padding:16px;border-bottom:1px solid var(--border);font-weight:700;font-size:14px">Conversations</div>
+      <div id="conv-items"><div class="spinner"></div></div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chat-area">
+      <div class="empty-state" style="margin:auto">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">Select a conversation</div>
+        <div class="empty-text">Choose a conversation from the list to start messaging.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-header"><span class="font-bold">Notifications</span><div class="flex gap-2"><button class="btn btn-ghost btn-sm" id="notif-read-all">Mark all read</button><button class="icon-btn" id="notif-close">✕</button></div></div>
+  <div class="notif-list" id="notif-list"></div>
+</div>
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+  if (!requireAuth()) {}
+
+  let activeConversation = null;
+  let pollInterval = null;
+
+  async function loadConversations() {
+    try {
+      const data = await CF.apiGet('/messages/conversations');
+      const container = document.getElementById('conv-items');
+      if (data.conversations.length === 0) {
+        container.innerHTML = `<div class="empty-state" style="padding:40px 16px"><div class="empty-icon">💬</div><div class="empty-title">No messages</div><div class="empty-text">Start a conversation by contacting a post reporter.</div></div>`;
+      } else {
+        container.innerHTML = data.conversations.map(conv => {
+          const other = conv.otherUser;
+          const post = conv.post;
+          const initials = CF.getInitials(other.name);
+          return `
+            <div class="conv-item" data-post="${post._id}" data-user="${other._id}" onclick="openConversation('${post._id}', '${other._id}', '${other.name}', '${other.profilePicture || ''}', '${post.itemName}')">
+              <div class="conv-avatar">${other.profilePicture ? `<img src="${other.profilePicture}" alt="${other.name}">` : initials}</div>
+              <div class="conv-info">
+                <div class="conv-name">${other.name}</div>
+                <div class="conv-preview">📦 ${post.itemName} · ${CF.truncate(conv.lastMessage.text, 30)}</div>
+              </div>
+              ${conv.unreadCount > 0 ? `<div class="conv-unread">${conv.unreadCount}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Auto-open from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const postId = urlParams.get('post');
+      const userId = urlParams.get('user');
+      if (postId && userId) {
+        const conv = data.conversations.find(c => c.post._id === postId && c.otherUser._id === userId);
+        if (conv) openConversation(conv.post._id, conv.otherUser._id, conv.otherUser.name, conv.otherUser.profilePicture || '', conv.post.itemName);
+        else {
+          // New conversation - load from URL
+          try {
+            const postData = await CF.apiGet(`/posts/${postId}`);
+            const reporter = postData.post.reporter;
+            openConversation(postId, userId, reporter.name, reporter.profilePicture || '', postData.post.itemName);
+          } catch {}
+        }
+      }
+    } catch (e) {
+      document.getElementById('conv-items').innerHTML = `<div class="text-muted text-center" style="padding:20px">${e.message}</div>`;
+    }
+  }
+
+  function openConversation(postId, userId, userName, userPic, itemName) {
+    activeConversation = { postId, userId };
+    if (pollInterval) clearInterval(pollInterval);
+
+    // Highlight active conversation
+    document.querySelectorAll('.conv-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.post === postId && el.dataset.user === userId);
+    });
+
+    const initials = CF.getInitials(userName);
+    const chatArea = document.getElementById('chat-area');
+    chatArea.innerHTML = `
+      <div class="chat-header">
+        <div class="conv-avatar">${userPic ? `<img src="${userPic}" alt="${userName}">` : initials}</div>
+        <div>
+          <div class="font-bold">${userName}</div>
+          <div class="text-sm text-muted">Re: ${itemName}</div>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:10px; align-items:center">
+          <a href="/post-detail.html?id=${postId}" class="btn btn-ghost btn-sm">View Post</a>
+        </div>
+      </div>
+      <div id="resolution-bar" style="background:var(--bg-elevated); padding:10px 20px; border-bottom:1px solid var(--border); display:none"></div>
+      <div class="messages-area" id="messages-area"></div>
+      <div class="chat-input-area">
+        <button class="icon-btn" onclick="document.getElementById('msg-image').click()" title="Send Image">📎</button>
+        <input type="file" id="msg-image" accept="image/*" style="display:none" onchange="handleMsgImage(this)">
+        <input type="text" id="msg-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendMessage()">
+        <button class="btn btn-primary" onclick="sendMessage()">Send ➤</button>
+      </div>
+    `;
+
+    loadMessages();
+    pollInterval = setInterval(loadMessages, 3000);
+
+    // Load post context for double confirmation action
+    CF.apiGet(`/posts/${postId}`)
+      .then(data => renderResolutionBar(data.post, userId))
+      .catch(e => console.error('Resolution check error:', e));
+  }
+
+  function renderResolutionBar(post, otherUserId) {
+    const resBar = document.getElementById('resolution-bar');
+    if (!resBar) return;
+    if (post.status !== 'active') {
+      resBar.style.display = 'none';
+      return;
+    }
+    const user = CF.getUser();
+    const isReporter = post.reporter._id === user._id || post.reporter === user._id;
+
+    let contentHtml = '';
+
+    if (post.type === 'lost') {
+      if (isReporter) {
+        if (post.ownerConfirmed) {
+          contentHtml = `<span class="text-sm">⏳ Receipt confirmed. Waiting for finder (${post.finder?.name || 'other student'}) to confirm handover.</span>`;
+        } else {
+          contentHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
+              <span class="text-sm">🤝 Did you receive your lost item from this student?</span>
+              <button class="btn btn-secondary btn-sm" onclick="confirmReceiptChat('${post._id}', '${otherUserId}')">✅ Confirm Receipt</button>
+            </div>
+          `;
+        }
+      } else {
+        if (post.finderConfirmed && post.finder?._id === user._id) {
+          contentHtml = `<span class="text-sm">⏳ Handover confirmed. Waiting for owner to confirm receipt.</span>`;
+        } else {
+          contentHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
+              <span class="text-sm">🤝 Did you hand over this lost item to the owner?</span>
+              <button class="btn btn-secondary btn-sm" onclick="confirmHandoverChat('${post._id}', '${otherUserId}')">🤝 Confirm Handover</button>
+            </div>
+          `;
+        }
+      }
+    } else {
+      if (isReporter) {
+        if (post.finderConfirmed) {
+          contentHtml = `<span class="text-sm">⏳ Handover confirmed. Waiting for owner (${post.owner?.name || 'other student'}) to confirm receipt.</span>`;
+        } else {
+          contentHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
+              <span class="text-sm">🤝 Did you hand over this found item to this student?</span>
+              <button class="btn btn-secondary btn-sm" onclick="confirmHandoverChat('${post._id}', '${otherUserId}')">🤝 Confirm Handover</button>
+            </div>
+          `;
+        }
+      } else {
+        if (post.ownerConfirmed && post.owner?._id === user._id) {
+          contentHtml = `<span class="text-sm">⏳ Receipt confirmed. Waiting for finder to confirm handover.</span>`;
+        } else {
+          contentHtml = `
+            <div style="display:flex; justify-content:space-between; align-items:center; width:100%">
+              <span class="text-sm">🤝 Did you receive this found item from the finder?</span>
+              <button class="btn btn-secondary btn-sm" onclick="confirmReceiptChat('${post._id}', '${otherUserId}')">✅ Confirm Receipt</button>
+            </div>
+          `;
+        }
+      }
+    }
+
+    resBar.innerHTML = contentHtml;
+    resBar.style.display = 'block';
+  }
+
+  async function confirmHandoverChat(postId, counterpartyId) {
+    if (!confirm('Confirm you handed over this item? Both parties must confirm to resolve.')) return;
+    try {
+      await CF.apiPut(`/posts/${postId}/confirm-handover`, { counterpartyId });
+      showToast('Handover confirmed!', 'success');
+      const active = activeConversation;
+      if (active) {
+        const postData = await CF.apiGet(`/posts/${active.postId}`);
+        renderResolutionBar(postData.post, active.userId);
+      }
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function confirmReceiptChat(postId, counterpartyId) {
+    if (!confirm('Confirm you received this item? Both parties must confirm to resolve.')) return;
+    try {
+      await CF.apiPut(`/posts/${postId}/confirm-receipt`, { counterpartyId });
+      showToast('Receipt confirmed!', 'success');
+      const active = activeConversation;
+      if (active) {
+        const postData = await CF.apiGet(`/posts/${active.postId}`);
+        renderResolutionBar(postData.post, active.userId);
+      }
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function loadMessages() {
+    if (!activeConversation) return;
+    try {
+      const data = await CF.apiGet(`/messages/${activeConversation.postId}/${activeConversation.userId}`);
+      const me = CF.getUser();
+      const area = document.getElementById('messages-area');
+      if (!area) return;
+      const wasAtBottom = area.scrollHeight - area.scrollTop <= area.clientHeight + 60;
+      area.innerHTML = data.messages.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">💬</div><div class="empty-title">No messages yet</div><div class="empty-text">Send the first message!</div></div>`
+        : data.messages.map(msg => {
+            const isSent = (msg.sender._id || msg.sender) === me._id;
+            return `
+              <div class="message-bubble ${isSent ? 'sent' : 'received'}">
+                ${msg.image ? `<img src="${msg.image}" alt="Image" style="max-width:200px;border-radius:8px;margin-bottom:6px;cursor:zoom-in" onclick="window.open('${msg.image}','_blank')">` : ''}
+                ${msg.text}
+                <div class="message-time">${CF.timeAgo(msg.createdAt)}</div>
+              </div>
+            `;
+          }).join('');
+      if (wasAtBottom || data.messages.length <= 5) area.scrollTop = area.scrollHeight;
+    } catch {}
+  }
+
+  let pendingMsgImage = null;
+  async function handleMsgImage(input) {
+    if (!input.files[0]) return;
+    pendingMsgImage = await CF.fileToBase64(input.files[0]);
+    showToast('Image attached. Type a message and send.', 'info');
+    input.value = '';
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('msg-input');
+    const text = input.value.trim();
+    if (!text && !pendingMsgImage) return;
+    const { postId, userId } = activeConversation;
+    try {
+      await CF.apiPost('/messages', { postId, receiverId: userId, text: text || '📷 Image', image: pendingMsgImage || null });
+      input.value = '';
+      pendingMsgImage = null;
+      loadMessages();
+      loadConversations();
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  loadConversations();
+</script>
+</body>
+</html>

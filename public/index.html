@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusFind – NIT Kurukshetra Lost & Found</title>
+  <meta name="description" content="Report and find lost items on NIT Kurukshetra campus. The official platform for students to report lost and found items securely.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- SIDEBAR OVERLAY -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">🔍</div>
+    <div class="brand-text">
+      <div class="brand-name">CampusFind</div>
+      <div class="brand-sub">NIT Kurukshetra</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <div class="nav-section-label">Navigation</div>
+    <div class="nav-item active" data-page="index.html" data-href="/index.html">
+      <span class="nav-icon">🏠</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="create-post.html" data-href="/create-post.html" id="nav-create">
+      <span class="nav-icon">➕</span> Report Item
+    </div>
+    <div class="nav-item" data-page="chat.html" data-href="/chat.html" id="nav-chat">
+      <span class="nav-icon">💬</span> Messages
+      <span class="nav-badge nav-msg-badge hidden">0</span>
+    </div>
+    <div class="nav-section-label">My Account</div>
+    <div class="nav-item" data-page="profile.html" data-href="/profile.html" id="nav-profile">
+      <span class="nav-icon">👤</span> Profile
+    </div>
+    <div class="nav-item" data-page="my-items.html" data-href="/my-items.html" id="nav-my-items">
+      <span class="nav-icon">📦</span> My Items
+    </div>
+    <div class="nav-item" id="nav-admin" style="display:none" data-href="/admin.html">
+      <span class="nav-icon">⚡</span> Admin Panel
+    </div>
+    <div class="nav-item" data-action="logout" id="nav-logout" style="display:none">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user" id="sidebar-user" style="display:none">
+      <div class="sidebar-avatar" id="user-avatar"></div>
+      <div class="sidebar-user-info">
+        <div class="user-name" id="user-name">User</div>
+        <div class="user-role" id="user-role">Student</div>
+      </div>
+    </div>
+    <div id="sidebar-auth-btn" style="display:none">
+      <a href="/auth.html" class="btn btn-primary btn-block btn-sm">🔐 Sign In</a>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+    <div class="topbar-title" id="topbar-title">Dashboard</div>
+    <div class="topbar-search">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="Search lost & found items..." autocomplete="off">
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="notif-btn" title="Notifications">
+        🔔
+        <span class="badge hidden" id="notif-badge">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- PAGE BODY -->
+  <div class="page-body">
+
+    <!-- HERO (shown when not logged in) -->
+    <div id="hero-section">
+      <div class="hero-section">
+        <div class="hero-badge">🎓 Exclusive for NIT Kurukshetra Students</div>
+        <h1 class="hero-title">Find What You Lost.<br>Return What You Found.</h1>
+        <p class="hero-subtitle">CampusFind is a secure platform where NITKKR students can report lost items, post found belongings, and connect safely to recover them.</p>
+        <div class="hero-cta">
+          <a href="/auth.html?tab=signup" class="btn btn-primary btn-lg">🚀 Get Started</a>
+          <a href="/auth.html" class="btn btn-ghost btn-lg">🔐 Sign In</a>
+        </div>
+      </div>
+
+      <!-- Features -->
+      <div class="stats-grid mb-6" style="margin-bottom:40px">
+        <div class="stat-card">
+          <div class="stat-value">🔐</div>
+          <div class="stat-label">Verified Students Only</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">✅</div>
+          <div class="stat-label">Admin Approved Posts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">💬</div>
+          <div class="stat-label">Secure Messaging</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">🔔</div>
+          <div class="stat-label">Smart Notifications</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD (shown when logged in) -->
+    <div id="dashboard-section" class="hidden">
+      <!-- Welcome message -->
+      <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 20px;" id="welcome-header">Welcome back! 👋</h2>
+
+      <!-- Quick stats -->
+      <div class="stats-grid mb-6" id="quick-stats" style="margin-bottom:24px"></div>
+
+      <!-- Filters -->
+      <div class="card mb-4" style="margin-bottom:24px">
+        <div class="card-body" style="padding:16px 24px">
+          <div class="flex justify-between items-center" style="flex-wrap:wrap;gap:16px">
+            <div class="flex gap-2 items-center" style="flex-wrap:wrap;gap:12px">
+              <button class="chip active" id="filter-all" onclick="setFilter('all', this)">All</button>
+              <button class="chip" id="filter-lost" onclick="setFilter('lost', this)"><span style="color:#ef4444;margin-right:4px">●</span> Lost</button>
+              <button class="chip" id="filter-found" onclick="setFilter('found', this)"><span style="color:#22c55e;margin-right:4px">●</span> Found</button>
+              <div style="height:24px;width:1px;background:var(--border);margin:0 4px"></div>
+              <select id="filter-category" class="form-control" style="width:auto;padding:4px 12px;font-size:13px" onchange="applyFilters()">
+                <option value="">All Categories</option>
+              </select>
+              <select id="filter-date" class="form-control" style="width:auto;padding:4px 12px;font-size:13px" onchange="applyFilters()">
+                <option value="">Any Date</option>
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+            
+            <div class="flex gap-2 items-center">
+              <span class="text-sm text-muted">Sort:</span>
+              <select id="filter-sort" class="form-control" style="width:auto;padding:4px 12px;font-size:13px" onchange="applyFilters()">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Browsing Grid -->
+      <div id="tab-browse">
+        <div class="section-header">
+          <div>
+            <div class="section-title" id="results-label">Latest Items</div>
+            <div class="section-subtitle" id="results-count"></div>
+          </div>
+          <a href="/create-post.html" class="btn btn-primary btn-sm">+ Report Item</a>
+        </div>
+        <div class="posts-grid" id="posts-grid">
+          <div class="spinner"></div>
+        </div>
+        <div class="text-center mt-4" id="load-more-wrap" style="margin-top:20px;display:none">
+          <button class="btn btn-ghost" id="load-more-btn" onclick="loadMorePosts()">Load More</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NOTIFICATIONS PANEL -->
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-header">
+    <span class="font-bold">Notifications</span>
+    <div class="flex gap-2">
+      <button class="btn btn-ghost btn-sm" id="notif-read-all">Mark all read</button>
+      <button class="icon-btn" id="notif-close">✕</button>
+    </div>
+  </div>
+  <div class="notif-list" id="notif-list"></div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+  let currentPage = 1;
+  let currentFilter = { type: '', category: '', dateRange: '', sort: 'newest' };
+  let currentSearch = '';
+  let totalPages = 1;
+  let activeTab = 'browse';
+
+  // Populate category filter
+  CF.CATEGORIES.forEach(cat => {
+    document.getElementById('filter-category').insertAdjacentHTML('beforeend', `<option value="${cat}">${cat}</option>`);
+  });
+
+  function setFilter(type, btn) {
+    document.querySelectorAll('.chip').forEach(b => { b.classList.remove('active'); });
+    btn.classList.add('active');
+    currentFilter.type = type === 'all' ? '' : type;
+    currentPage = 1;
+    loadPosts();
+  }
+
+  function applyFilters() {
+    currentFilter.category = document.getElementById('filter-category').value;
+    currentFilter.dateRange = document.getElementById('filter-date').value;
+    currentFilter.sort = document.getElementById('filter-sort').value;
+    currentPage = 1;
+    loadPosts();
+  }
+
+  function buildQuery() {
+    const params = new URLSearchParams();
+    if (currentFilter.type) params.set('type', currentFilter.type);
+    if (currentFilter.category) params.set('category', currentFilter.category);
+    if (currentSearch) params.set('search', currentSearch);
+    if (currentFilter.sort) params.set('sort', currentFilter.sort);
+    if (currentFilter.dateRange) {
+      const now = new Date();
+      let dateFrom;
+      if (currentFilter.dateRange === 'today') dateFrom = new Date(now.setHours(0,0,0,0));
+      else if (currentFilter.dateRange === 'week') dateFrom = new Date(now - 7*86400000);
+      else if (currentFilter.dateRange === 'month') dateFrom = new Date(now - 30*86400000);
+      if (dateFrom) params.set('dateFrom', dateFrom.toISOString());
+    }
+    params.set('page', currentPage);
+    params.set('limit', 12);
+    return params.toString();
+  }
+
+  async function loadPosts(append = false) {
+    const grid = document.getElementById('posts-grid');
+    if (!append) grid.innerHTML = '<div class="spinner"></div>';
+    try {
+      const data = await CF.apiGet(`/posts?${buildQuery()}`);
+      totalPages = data.pages;
+      const count = document.getElementById('results-count');
+      if (count) count.textContent = `${data.total} item${data.total !== 1 ? 's' : ''} found`;
+      if (data.posts.length === 0 && !append) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🔍</div><div class="empty-title">No items found</div><div class="empty-text">Try adjusting your search or filters.</div></div>`;
+      } else {
+        if (!append) grid.innerHTML = '';
+        data.posts.forEach(post => { grid.insertAdjacentHTML('beforeend', renderPostCard(post)); });
+      }
+      const lmWrap = document.getElementById('load-more-wrap');
+      const lmBtn = document.getElementById('load-more-btn');
+      if (lmWrap && lmBtn) {
+        lmWrap.style.display = currentPage < totalPages ? 'block' : 'none';
+        lmBtn.textContent = 'Load More';
+        lmBtn.disabled = false;
+      }
+    } catch (e) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">⚠️</div><div class="empty-title">Error loading posts</div><div class="empty-text">${e.message}</div></div>`;
+    }
+  }
+
+  async function loadMorePosts() {
+    currentPage++;
+    const btn = document.getElementById('load-more-btn');
+    btn.textContent = 'Loading...'; btn.disabled = true;
+    await loadPosts(true);
+  }
+
+  async function loadQuickStats() {
+    const grid = document.getElementById('quick-stats');
+    if (!grid) return;
+    try {
+      const data = await CF.apiGet('/posts/dashboard-stats');
+      const s = data.stats;
+      grid.innerHTML = `
+        <div class="stat-card" style="display:flex;align-items:center;text-align:left;gap:16px;padding:20px 24px">
+          <div style="font-size:24px;width:48px;height:48px;background:rgba(99,102,241,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--primary)">💼</div>
+          <div>
+            <div style="font-size:28px;font-weight:900;line-height:1.2">${s.totalLost}</div>
+            <div class="stat-label">Lost Items</div>
+            <div style="font-size:11px;color:#10b981;margin-top:2px;font-weight:600">↑ ${s.lostThisWeek} this week</div>
+          </div>
+        </div>
+        <div class="stat-card" style="display:flex;align-items:center;text-align:left;gap:16px;padding:20px 24px">
+          <div style="font-size:24px;width:48px;height:48px;background:rgba(20,184,166,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--secondary)">🛍️</div>
+          <div>
+            <div style="font-size:28px;font-weight:900;line-height:1.2">${s.totalFound}</div>
+            <div class="stat-label">Found Items</div>
+            <div style="font-size:11px;color:#10b981;margin-top:2px;font-weight:600">↑ ${s.foundThisWeek} this week</div>
+          </div>
+        </div>
+        <div class="stat-card" style="display:flex;align-items:center;text-align:left;gap:16px;padding:20px 24px">
+          <div style="font-size:24px;width:48px;height:48px;background:rgba(59,130,246,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;color:#3b82f6">📄</div>
+          <div>
+            <div style="font-size:28px;font-weight:900;line-height:1.2">${s.totalPosts}</div>
+            <div class="stat-label">Total Posts</div>
+            <div style="font-size:11px;color:#10b981;margin-top:2px;font-weight:600">↑ ${s.totalThisWeek} this week</div>
+          </div>
+        </div>
+        <div class="stat-card" style="display:flex;align-items:center;text-align:left;gap:16px;padding:20px 24px">
+          <div style="font-size:24px;width:48px;height:48px;background:rgba(245,158,11,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--accent)">🏛️</div>
+          <div>
+            <div style="font-size:18px;font-weight:900;line-height:1.2;color:var(--text-primary)">NIT</div>
+            <div class="stat-label" style="font-size:10px">Kurukshetra</div>
+            <div style="font-size:11px;color:#fbbf24;margin-top:2px;font-weight:600">Our Campus</div>
+          </div>
+        </div>
+      `;
+    } catch (e) { console.error('Quick stats error:', e); }
+  }
+
+  // Search
+  let searchTimeout;
+  document.getElementById('search-input').addEventListener('input', e => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      currentSearch = e.target.value.trim();
+      currentPage = 1;
+      loadPosts();
+    }, 400);
+  });
+
+  // Check for verified redirect
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('verified') === 'true') {
+    showToast('Email verified successfully! You can now log in.', 'success');
+  }
+
+  // Page init
+  (async () => {
+    if (CF.isLoggedIn()) {
+      document.getElementById('hero-section').classList.add('hidden');
+      document.getElementById('dashboard-section').classList.remove('hidden');
+      document.getElementById('nav-logout').style.display = '';
+      const user = CF.getUser();
+      if (user) {
+        if (user.role === 'admin') document.getElementById('nav-admin').style.display = '';
+        const firstName = user.name.split(' ')[0];
+        document.getElementById('welcome-header').textContent = `Welcome back, ${firstName}! 👋`;
+      }
+      loadQuickStats();
+      loadPosts();
+    } else {
+      // Hide logged-in only nav items
+      ['nav-create','nav-chat','nav-profile','nav-my-items'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+  })();
+</script>
+</body>
+</html>

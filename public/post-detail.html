@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Item Details – CampusFind</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">🔍</div>
+    <div class="brand-text"><div class="brand-name">CampusFind</div><div class="brand-sub">NIT Kurukshetra</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Navigation</div>
+    <div class="nav-item" data-href="/index.html"><span class="nav-icon">🏠</span> Dashboard</div>
+    <div class="nav-item" data-href="/create-post.html"><span class="nav-icon">➕</span> Report Item</div>
+    <div class="nav-item" data-href="/chat.html"><span class="nav-icon">💬</span> Messages <span class="nav-badge nav-msg-badge hidden">0</span></div>
+    <div class="nav-section-label">My Account</div>
+    <div class="nav-item" data-href="/profile.html"><span class="nav-icon">👤</span> Profile</div>
+    <div class="nav-item" data-href="/my-items.html"><span class="nav-icon">📦</span> My Items</div>
+    <div class="nav-item" id="nav-admin" style="display:none" data-href="/admin.html"><span class="nav-icon">⚡</span> Admin Panel</div>
+    <div class="nav-item" data-action="logout"><span class="nav-icon">🚪</span> Logout</div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="sidebar-user" id="sidebar-user">
+      <div class="sidebar-avatar"></div>
+      <div class="sidebar-user-info"><div class="user-name" id="user-name">User</div><div class="user-role" id="user-role">Student</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="main-content">
+  <div class="topbar">
+    <button class="sidebar-toggle" id="sidebar-toggle">☰</button>
+    <div class="topbar-title">Item Details</div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="notif-btn">🔔<span class="badge hidden" id="notif-badge">0</span></button>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div style="margin-bottom:16px">
+      <button class="btn btn-ghost btn-sm" onclick="history.back()">← Back</button>
+    </div>
+    <div id="post-content"><div class="spinner"></div></div>
+  </div>
+</div>
+
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-header"><span class="font-bold">Notifications</span><div class="flex gap-2"><button class="btn btn-ghost btn-sm" id="notif-read-all">Mark all read</button><button class="icon-btn" id="notif-close">✕</button></div></div>
+  <div class="notif-list" id="notif-list"></div>
+</div>
+
+<!-- Chat Initiate Modal -->
+<div class="modal-overlay" id="chat-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">💬 Send a Message</div>
+      <button class="modal-close" onclick="closeModal('chat-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="text-sm text-muted mb-4">Send a message to the reporter. Be polite and provide proof of ownership if needed.</p>
+      <div class="form-group">
+        <label class="form-label">Your Message</label>
+        <textarea id="initial-message" class="form-control" rows="4" placeholder="Hi, I think I found your item / I lost an item similar to this..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('chat-modal')">Cancel</button>
+      <button class="btn btn-primary" id="send-initial-msg-btn" onclick="sendInitialMessage()">Send Message</button>
+    </div>
+  </div>
+</div>
+
+<!-- Image Lightbox Modal -->
+<div class="modal-overlay" id="lightbox-modal" style="background:rgba(0,0,0,0.9)">
+  <div style="position:relative;max-width:90vw;max-height:90vh">
+    <img id="lightbox-img" src="" alt="Full size" style="max-width:90vw;max-height:85vh;border-radius:var(--radius-lg);object-fit:contain">
+    <button class="modal-close" onclick="closeModal('lightbox-modal')" style="position:absolute;top:-40px;right:0;font-size:24px;width:40px;height:40px">✕</button>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const postId = urlParams.get('id');
+  if (!postId) window.location.href = '/index.html';
+
+  let currentPost = null;
+  let selectedGalleryIndex = 0;
+
+  async function loadPost() {
+    try {
+      const data = await CF.apiGet(`/posts/${postId}`);
+      currentPost = data.post;
+      renderPost(data.post);
+    } catch (e) {
+      document.getElementById('post-content').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Error loading post</div><div class="empty-text">${e.message}</div></div>`;
+    }
+  }
+
+  function renderPost(post) {
+    const user = CF.getUser();
+    const isOwner = user && ((post.reporter._id || post.reporter) === user._id || post.reporter._id === user._id);
+    const isLoggedIn = CF.isLoggedIn();
+    const reporter = post.reporter;
+    const images = post.images || [];
+    const cover = images[post.coverImageIndex || 0];
+
+    document.title = `${post.itemName} – CampusFind`;
+
+    const galleryHtml = images.length > 0 ? `
+      <div class="post-images-gallery">
+        <div class="gallery-main">
+          <img src="${cover}" alt="${post.itemName}" id="gallery-main-img" onclick="openLightbox(${post.coverImageIndex || 0})" style="cursor:zoom-in">
+        </div>
+        ${images.length > 1 ? `
+          <div class="gallery-thumbs">
+            ${images.map((img, i) => `<img src="${img}" class="gallery-thumb ${i === (post.coverImageIndex || 0) ? 'active' : ''}" onclick="switchGallery(${i})" alt="Image ${i+1}">`).join('')}
+          </div>
+        ` : ''}
+      </div>
+    ` : `<div class="post-images-gallery"><div class="gallery-main" style="display:flex;align-items:center;justify-content:center;height:300px;font-size:80px;background:var(--bg-elevated)">${CF.CATEGORY_ICONS[post.category] || '📦'}</div></div>`;
+
+    const statusColors = { pending: '#fcd34d', approved: '#86efac', recovered: '#a5b4fc', returned: '#a5b4fc', rejected: '#fca5a5' };
+
+    document.getElementById('post-content').innerHTML = `
+      <div class="post-detail-layout">
+        <div>
+          ${galleryHtml}
+
+          <div class="card mt-4" style="margin-top:20px">
+            <div class="card-body">
+              <h2 style="font-size:22px;font-weight:800;margin-bottom:8px">${post.itemName}</h2>
+              <div class="flex gap-2 mb-4" style="gap:10px;flex-wrap:wrap;margin-bottom:16px">
+                <span class="chip ${post.type === 'lost' ? 'badge-lost' : 'badge-found'}" style="border-radius:var(--radius-full)">${post.type === 'lost' ? '🔴 Lost' : '🟢 Found'}</span>
+                <span class="chip">${CF.CATEGORY_ICONS[post.category] || ''} ${post.category}</span>
+                <span style="padding:4px 12px;border-radius:var(--radius-full);font-size:12px;font-weight:700;background:rgba(0,0,0,0.2);color:${statusColors[post.status] || 'white'}">${post.status.charAt(0).toUpperCase()+post.status.slice(1)}</span>
+              </div>
+              <p class="text-muted text-sm" style="margin-bottom:20px;line-height:1.7">${post.description}</p>
+
+              <div class="divider"></div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+                <div>
+                  <div class="text-sm text-muted" style="margin-bottom:4px">📍 Location</div>
+                  <div class="font-bold">${post.location}</div>
+                </div>
+                <div>
+                  <div class="text-sm text-muted" style="margin-bottom:4px">📅 Date</div>
+                  <div class="font-bold">${CF.formatDate(post.date)}</div>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+              <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text-secondary)">Q&A</div>
+              <div style="display:flex;flex-direction:column;gap:12px">
+                <div class="card" style="padding:12px 16px;background:var(--bg-elevated)">
+                  <div class="text-sm text-muted mb-2">Q: ${post.type === 'lost' ? 'Where did you last see it?' : 'Where did you find it?'}</div>
+                  <div class="text-sm">${post.questions.question1}</div>
+                </div>
+                <div class="card" style="padding:12px 16px;background:var(--bg-elevated)">
+                  <div class="text-sm text-muted mb-2">Q: ${post.type === 'lost' ? 'When did you lose it?' : 'When did you find it?'}</div>
+                  <div class="text-sm">${post.questions.question2}</div>
+                </div>
+                <div class="card" style="padding:12px 16px;background:var(--bg-elevated)">
+                  <div class="text-sm text-muted mb-2">Q: ${post.type === 'lost' ? 'How to identify ownership?' : 'Is it with you or deposited?'}</div>
+                  <div class="text-sm">${post.questions.question3}</div>
+                </div>
+              </div>
+
+              ${post.status === 'rejected' && post.rejectionReason ? `
+                <div style="margin-top:16px;padding:16px;border-radius:var(--radius-md);background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3)">
+                  <div class="font-bold text-danger" style="margin-bottom:4px">❌ Rejected</div>
+                  <div class="text-sm">Reason: ${post.rejectionReason}</div>
+                </div>
+              ` : ''}
+
+              <!-- Double Confirmation Section -->
+              ${post.status === 'active' && isLoggedIn ? `
+                <div class="card mt-4" style="padding:16px;background:var(--bg-elevated);margin-top:20px">
+                  <div class="font-bold mb-2">🤝 Exchange Resolution Status</div>
+                  <p class="text-xs text-muted mb-3">To resolve this post, both the owner must confirm receipt and the finder must confirm handover.</p>
+                  
+                  <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+                    <div class="text-sm">● Owner Receipt Confirmation: <strong>${post.ownerConfirmed ? '✅ Confirmed' : '⏳ Pending'}</strong> ${post.owner ? `(${post.owner.name})` : ''}</div>
+                    <div class="text-sm">● Finder Handover Confirmation: <strong>${post.finderConfirmed ? '✅ Confirmed' : '⏳ Pending'}</strong> ${post.finder ? `(${post.finder.name})` : ''}</div>
+                  </div>
+
+                  <div style="display:flex;gap:10px">
+                    ${post.type === 'lost' ? `
+                      ${isOwner && !post.ownerConfirmed ? `<button class="btn btn-secondary btn-sm" onclick="confirmReceipt()">✅ Confirm Receipt</button>` : ''}
+                      ${!isOwner && !(post.finderConfirmed && post.finder?._id === user._id) ? `<button class="btn btn-secondary btn-sm" onclick="confirmHandover()">🤝 Confirm Handover</button>` : ''}
+                    ` : `
+                      ${isOwner && !post.finderConfirmed ? `<button class="btn btn-secondary btn-sm" onclick="confirmHandover()">🤝 Confirm Handover</button>` : ''}
+                      ${!isOwner && !(post.ownerConfirmed && post.owner?._id === user._id) ? `<button class="btn btn-secondary btn-sm" onclick="confirmReceipt()">✅ Confirm Receipt</button>` : ''}
+                    `}
+                  </div>
+                </div>
+              ` : ''}
+
+              ${isOwner && ['pending','rejected'].includes(post.status) ? `
+                <div style="margin-top:20px;display:flex;gap:12px">
+                  <a href="/create-post.html?edit=${post._id}" class="btn btn-ghost btn-sm">✏️ Edit Post</a>
+                  <button class="btn btn-danger btn-sm" onclick="deletePost('${post._id}', this)">🗑️ Delete</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div>
+          <!-- Reporter Info -->
+          <div class="card mb-4" style="margin-bottom:16px">
+            <div class="card-header">
+              <div class="card-title">Reported By</div>
+            </div>
+            <div class="card-body">
+              <div class="flex items-center gap-2" style="gap:12px;margin-bottom:16px">
+                <div class="sidebar-avatar" style="width:48px;height:48px;font-size:18px;flex-shrink:0">
+                  ${reporter.profilePicture ? `<img src="${reporter.profilePicture}" alt="${reporter.name}">` : CF.getInitials(reporter.name)}
+                </div>
+                <div>
+                  <div class="font-bold">${reporter.name}</div>
+                  <div class="text-sm text-muted">${reporter.rollNumber || ''}</div>
+                  ${reporter.department ? `<div class="text-sm text-muted">${reporter.department}</div>` : ''}
+                </div>
+              </div>
+              <div class="text-sm text-muted mb-4">Member since ${CF.formatDate(reporter.dateJoined)}</div>
+
+              ${!isOwner && isLoggedIn && post.status === 'active' ? `
+                <button class="btn btn-primary btn-block" onclick="openModal('chat-modal')">
+                  💬 Contact Reporter
+                </button>
+              ` : ''}
+              ${!isLoggedIn ? `
+                <a href="/auth.html" class="btn btn-primary btn-block">🔐 Login to Contact</a>
+              ` : ''}
+              ${isOwner ? `<div class="chip" style="display:block;text-align:center">👤 This is your post</div>` : ''}
+            </div>
+          </div>
+
+          <!-- Safety Tips -->
+          <div class="card mb-4" style="margin-bottom:16px">
+            <div class="card-header"><div class="card-title">🛡️ Safety Tips</div></div>
+            <div class="card-body" style="font-size:13px; line-height:1.6">
+              <ul style="padding-left:16px; margin:0; display:flex; flex-direction:column; gap:8px">
+                <li>🤝 <strong>Meet in a public place</strong> (e.g. library, cafeteria).</li>
+                <li>🔍 <strong>Verify the item details</strong> before handing over.</li>
+                <li>🔒 <strong>Do not share personal info</strong> or addresses.</li>
+                <li>⚠️ <strong>Report suspicious activity</strong> to the admin.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Post Info -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">Post Info</div></div>
+            <div class="card-body">
+              <div class="text-sm" style="display:flex;flex-direction:column;gap:8px">
+                <div class="flex justify-between"><span class="text-muted">Posted</span><span>${CF.timeAgo(post.createdAt)}</span></div>
+                <div class="flex justify-between"><span class="text-muted">Type</span><span>${post.type === 'lost' ? '🔴 Lost' : '🟢 Found'}</span></div>
+                <div class="flex justify-between"><span class="text-muted">Category</span><span>${post.category}</span></div>
+                <div class="flex justify-between"><span class="text-muted">Status</span><span style="font-weight:700">${post.status.toUpperCase()}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function switchGallery(i) {
+    const imgs = currentPost.images || [];
+    selectedGalleryIndex = i;
+    document.getElementById('gallery-main-img').src = imgs[i];
+    document.querySelectorAll('.gallery-thumb').forEach((t, idx) => t.classList.toggle('active', idx === i));
+  }
+
+  function openLightbox(i) {
+    const imgs = currentPost.images || [];
+    document.getElementById('lightbox-img').src = imgs[i];
+    openModal('lightbox-modal');
+  }
+
+  let chatReceiverId = null;
+
+  async function sendInitialMessage() {
+    const text = document.getElementById('initial-message').value.trim();
+    if (!text) return showToast('Please enter a message.', 'warning');
+    const btn = document.getElementById('send-initial-msg-btn');
+    btn.disabled = true; btn.textContent = '⏳ Sending...';
+    try {
+      const reporterId = currentPost.reporter._id || currentPost.reporter;
+      await CF.apiPost('/messages', { postId: currentPost._id, receiverId: reporterId, text });
+      closeModal('chat-modal');
+      showToast('Message sent!', 'success');
+      setTimeout(() => window.location.href = `/chat.html?post=${currentPost._id}&user=${reporterId}`, 800);
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false; btn.textContent = 'Send Message';
+    }
+  }
+
+  async function confirmHandover() {
+    if (!confirm('Are you sure you want to confirm handover of this item? This tells the system you returned it.')) return;
+    try {
+      await CF.apiPut(`/posts/${currentPost._id}/confirm-handover`, {});
+      showToast('Handover confirmed!', 'success');
+      loadPost();
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  async function confirmReceipt() {
+    if (!confirm('Are you sure you want to confirm receipt of this item? This tells the system you received it.')) return;
+    try {
+      await CF.apiPut(`/posts/${currentPost._id}/confirm-receipt`, {});
+      showToast('Receipt confirmed!', 'success');
+      loadPost();
+    } catch (e) { showToast(e.message, 'error'); }
+  }
+
+  loadPost();
+</script>
+</body>
+</html>

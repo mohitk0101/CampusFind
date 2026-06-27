@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In / Sign Up – CampusFind</title>
+  <meta name="description" content="Sign in or register for CampusFind with your NIT Kurukshetra college email.">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+<div class="auth-page">
+  <!-- Background blobs -->
+  <div class="auth-bg">
+    <div class="auth-blob auth-blob-1"></div>
+    <div class="auth-blob auth-blob-2"></div>
+  </div>
+
+  <div class="auth-container">
+    <div class="auth-header">
+      <div class="auth-logo">🔍</div>
+      <h1 class="auth-title">CampusFind</h1>
+      <p class="auth-subtitle" id="auth-subtitle">NIT Kurukshetra Lost & Found Platform</p>
+    </div>
+
+    <div class="auth-card">
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</div>
+        <div class="auth-tab" id="tab-signup" onclick="switchAuthTab('signup')">Sign Up</div>
+      </div>
+
+      <!-- Login Form -->
+      <div id="form-login">
+        <div class="form-group">
+          <label class="form-label">College Email</label>
+          <input type="email" id="login-email" class="form-control" placeholder="124102101@nitkkr.ac.in" autocomplete="email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div style="position: relative;">
+            <input type="password" id="login-password" class="form-control" placeholder="Enter your password" autocomplete="current-password" style="padding-right: 40px;">
+            <span onclick="togglePasswordVisibility('login-password', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 16px;">👁️</span>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="login-btn" onclick="handleLogin()">
+          🔐 Sign In
+        </button>
+        <div class="auth-divider">or</div>
+        <p class="text-center text-sm text-muted">Don't have an account? <span class="auth-link" onclick="switchAuthTab('signup')">Sign Up</span></p>
+      </div>
+
+      <!-- Signup Form -->
+      <div id="form-signup" class="hidden">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Full Name</label>
+            <input type="text" id="signup-name" class="form-control" placeholder="Rahul Sharma" autocomplete="name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Roll Number</label>
+            <input type="text" id="signup-roll" class="form-control" placeholder="124102101" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">College Email</label>
+          <input type="email" id="signup-email" class="form-control" placeholder="124102101@nitkkr.ac.in" autocomplete="email">
+          <div class="form-hint">Must be your official @nitkkr.ac.in email</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <div style="position: relative;">
+            <input type="password" id="signup-password" class="form-control" placeholder="At least 6 characters" autocomplete="new-password" style="padding-right: 40px;">
+            <span onclick="togglePasswordVisibility('signup-password', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 16px;">👁️</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <div style="position: relative;">
+            <input type="password" id="signup-confirm" class="form-control" placeholder="Repeat your password" autocomplete="new-password" style="padding-right: 40px;">
+            <span onclick="togglePasswordVisibility('signup-confirm', this)" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 16px;">👁️</span>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="signup-btn" onclick="handleSignup()">
+          🚀 Create Account
+        </button>
+        <div class="auth-divider">or</div>
+        <p class="text-center text-sm text-muted">Already have an account? <span class="auth-link" onclick="switchAuthTab('login')">Sign In</span></p>
+      </div>
+
+      <!-- Success message after register -->
+      <div id="form-check-email" class="hidden" style="text-align:center;padding:12px 0">
+        <div style="font-size:48px;margin-bottom:12px">📧</div>
+        <div class="auth-title" style="font-size:20px;margin-bottom:8px">Check Your Email</div>
+        <p class="text-muted text-sm" style="margin-bottom:20px">We have sent a verification link to your official college email. Please check your inbox (and spam folder) and verify your account to log in.</p>
+        <div style="margin-top:12px">
+          <span class="auth-link" onclick="switchAuthTab('login')">← Back to Sign In</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:20px">
+      <a href="/" class="text-sm text-muted" style="opacity:0.6">← Back to Home</a>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script src="/js/app.js"></script>
+<script>
+  // Check if already logged in
+  if (CF.isLoggedIn()) {
+    const user = CF.getUser();
+    window.location.href = user && user.role === 'admin' ? '/admin.html' : '/index.html';
+  }
+
+  // Check URL tab param
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('tab') === 'signup') switchAuthTab('signup');
+
+  let lastRegisteredEmail = '';
+
+  function switchAuthTab(tab) {
+    document.getElementById('form-login').classList.add('hidden');
+    document.getElementById('form-signup').classList.add('hidden');
+    document.getElementById('form-check-email').classList.add('hidden');
+    document.getElementById('tab-login').classList.remove('active');
+    document.getElementById('tab-signup').classList.remove('active');
+    if (tab === 'login') {
+      document.getElementById('form-login').classList.remove('hidden');
+      document.getElementById('tab-login').classList.add('active');
+    } else {
+      document.getElementById('form-signup').classList.remove('hidden');
+      document.getElementById('tab-signup').classList.add('active');
+    }
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) return showToast('Please fill in all fields.', 'warning');
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = '⏳ Signing in...';
+    try {
+      const data = await CF.apiPost('/auth/login', { email, password });
+      CF.setAuth(data.token, data.user);
+      showToast('Welcome back!', 'success');
+      setTimeout(() => {
+        window.location.href = data.user.role === 'admin' ? '/admin.html' : '/index.html';
+      }, 600);
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false; btn.textContent = '🔐 Sign In';
+    }
+  }
+
+  async function handleSignup() {
+    const name = document.getElementById('signup-name').value.trim();
+    const rollNumber = document.getElementById('signup-roll').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-confirm').value;
+    if (!name || !rollNumber || !email || !password || !confirmPassword) return showToast('Please fill in all fields.', 'warning');
+    if (!email.toLowerCase().endsWith('@nitkkr.ac.in')) return showToast('Use your official @nitkkr.ac.in email!', 'error');
+    if (password.length < 6) return showToast('Password must be at least 6 characters.', 'warning');
+    if (password !== confirmPassword) return showToast('Passwords do not match!', 'error');
+    const btn = document.getElementById('signup-btn');
+    btn.disabled = true; btn.textContent = '⏳ Creating account...';
+    try {
+      await CF.apiPost('/auth/register', { name, rollNumber, email, password, confirmPassword });
+      lastRegisteredEmail = email;
+      document.getElementById('form-signup').classList.add('hidden');
+      document.getElementById('form-check-email').classList.remove('hidden');
+      showToast('Account created! Please verify your email.', 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false; btn.textContent = '🚀 Create Account';
+    }
+  }
+
+  // Enter key handler
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (!document.getElementById('form-login').classList.contains('hidden')) handleLogin();
+      else if (!document.getElementById('form-signup').classList.contains('hidden')) handleSignup();
+    }
+  });
+
+  function togglePasswordVisibility(id, btn) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btn.textContent = '👁️';
+    }
+  }
+</script>
+</body>
+</html>
