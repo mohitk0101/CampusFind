@@ -24,8 +24,15 @@ export default function Dashboard() {
   const [filterSort, setFilterSort] = useState('newest');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Landing page state variables
+  const [contactName, setContactName] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [contactSubject, setContactSubject] = useState('');
+  const [contactMessage, setContactMessage] = useState('');
+  const [isSendingContact, setIsSendingContact] = useState(false);
+  const [activeNav, setActiveNav] = useState('home');
+
   const fetchStats = async () => {
-    if (!isLoggedIn) return;
     try {
       const data = await CF.apiGet('/posts/dashboard-stats');
       setStats(data.stats);
@@ -83,8 +90,34 @@ export default function Dashboard() {
     if (isLoggedIn) {
       fetchStats();
       fetchPosts(false);
+    } else {
+      fetchStats();
     }
   }, [isLoggedIn, filterType, filterCategory, filterDateRange, filterSort, searchQuery]);
+
+  const handleContactSubmit = (e) => {
+    e.preventDefault();
+    if (!contactName.trim() || !contactEmail.trim() || !contactMessage.trim()) {
+      return alert('Please fill in Name, Email, and Message fields.');
+    }
+    setIsSendingContact(true);
+    setTimeout(() => {
+      alert(`Thank you, ${contactName}! Your message has been sent successfully.`);
+      setContactName('');
+      setContactEmail('');
+      setContactSubject('');
+      setContactMessage('');
+      setIsSendingContact(false);
+    }, 1000);
+  };
+
+  const scrollToSection = (id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+      setActiveNav(id);
+    }
+  };
 
   const handleSearchChange = (val) => {
     setSearchQuery(val.trim());
@@ -99,6 +132,281 @@ export default function Dashboard() {
     return user.name.split(' ')[0];
   };
 
+  if (!isLoggedIn) {
+    return (
+      <div className="landing-page">
+        {/* Navigation Header */}
+        <header className="landing-nav">
+          <div className="landing-logo" onClick={() => scrollToSection('home')}>
+            CampusFind
+          </div>
+          <nav className="landing-nav-links">
+            <span className={`landing-nav-link ${activeNav === 'home' ? 'active' : ''}`} onClick={() => scrollToSection('home')}>Home</span>
+            <span className={`landing-nav-link ${activeNav === 'how-it-works' ? 'active' : ''}`} onClick={() => scrollToSection('how-it-works')}>How It Works</span>
+            <span className={`landing-nav-link ${activeNav === 'about-us' ? 'active' : ''}`} onClick={() => scrollToSection('about-us')}>About Us</span>
+            <span className={`landing-nav-link ${activeNav === 'contact-us' ? 'active' : ''}`} onClick={() => scrollToSection('contact-us')}>Contact</span>
+            <button className="landing-nav-btn" onClick={() => navigate('/auth')}>Sign In</button>
+          </nav>
+        </header>
+
+        {/* Hero Section */}
+        <section className="landing-section" id="home" style={{ display: 'flex', flexDirection: 'column', minHeight: '85vh', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="landing-hero-card">
+            <div className="landing-hero-badge">🎓 Exclusive for NIT Kurukshetra Students</div>
+            <h1 className="landing-hero-title">Find What You Lost.<br /><span>Return What You Found.</span></h1>
+            <p className="landing-hero-desc">CampusFind is a secure platform where NITKKR students can report lost items, post found belongings, and connect safely to recover them.</p>
+            <div className="landing-hero-cta">
+              <button onClick={() => navigate('/auth?tab=signup')} className="btn btn-primary btn-lg" style={{ cursor: 'pointer' }}>🚀 Get Started</button>
+              <button onClick={() => navigate('/auth')} className="btn btn-ghost btn-lg" style={{ cursor: 'pointer', marginLeft: '12px' }}>🔐 Sign In</button>
+            </div>
+          </div>
+
+          <div className="stats-grid" style={{ width: '100%', maxWidth: '960px', marginTop: '20px' }}>
+            <div className="stat-card">
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔐</div>
+              <div className="font-bold text-sm" style={{ color: '#ffffff', marginBottom: '4px' }}>Verified Students Only</div>
+              <div className="text-xs text-muted">Secure platform for NITKKR students</div>
+            </div>
+            <div className="stat-card">
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🛡️</div>
+              <div className="font-bold text-sm" style={{ color: '#ffffff', marginBottom: '4px' }}>Admin Approved Posts</div>
+              <div className="text-xs text-muted">All posts are reviewed by admin</div>
+            </div>
+            <div className="stat-card">
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>💬</div>
+              <div className="font-bold text-sm" style={{ color: '#ffffff', marginBottom: '4px' }}>Secure Messaging</div>
+              <div className="text-xs text-muted">Connect safely with fellow students</div>
+            </div>
+            <div className="stat-card">
+              <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔔</div>
+              <div className="font-bold text-sm" style={{ color: '#ffffff', marginBottom: '4px' }}>Smart Notifications</div>
+              <div className="text-xs text-muted">Get instant updates on your posts</div>
+            </div>
+          </div>
+
+          <div className="landing-stats-row" style={{ width: '100%', maxWidth: '960px' }}>
+            <div className="landing-stat-item">
+              <div className="landing-stat-num">{stats ? stats.totalLost : 120}+</div>
+              <div className="landing-stat-label">Lost Items</div>
+            </div>
+            <div className="landing-stat-item">
+              <div className="landing-stat-num">{stats ? stats.totalFound : 95}+</div>
+              <div className="landing-stat-label">Found Items</div>
+            </div>
+            <div className="landing-stat-item">
+              <div className="landing-stat-num">{stats ? stats.totalResolved : 80}+</div>
+              <div className="landing-stat-label">Successful Returns</div>
+            </div>
+            <div className="landing-stat-item">
+              <div className="landing-stat-num">500+</div>
+              <div className="landing-stat-label">Happy Students</div>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="landing-section" id="how-it-works">
+          <h2 className="landing-title">How It Works</h2>
+          <p className="landing-subtitle">A simple 5-step process to help you recover lost items.</p>
+
+          <div className="landing-steps-grid">
+            <div className="landing-step-card">
+              <div className="landing-step-num">1</div>
+              <div className="landing-step-icon">👤</div>
+              <h4 className="landing-step-title">Sign In</h4>
+              <p className="landing-step-desc">Sign in using your NITKKR email to get started.</p>
+            </div>
+            <div className="landing-step-card">
+              <div className="landing-step-num">2</div>
+              <div className="landing-step-icon">📝</div>
+              <h4 className="landing-step-title">Create a Post</h4>
+              <p className="landing-step-desc">Create a Lost or Found post with item details.</p>
+            </div>
+            <div className="landing-step-card">
+              <div className="landing-step-num">3</div>
+              <div className="landing-step-icon">🛡️</div>
+              <h4 className="landing-step-title">Admin Review</h4>
+              <p className="landing-step-desc">Admin reviews and approves the post for authenticity.</p>
+            </div>
+            <div className="landing-step-card">
+              <div className="landing-step-num">4</div>
+              <div className="landing-step-icon">🔍</div>
+              <h4 className="landing-step-title">Find & Connect</h4>
+              <p className="landing-step-desc">Students browse posts and find matching items.</p>
+            </div>
+            <div className="landing-step-card">
+              <div className="landing-step-num">5</div>
+              <div className="landing-step-icon">🤝</div>
+              <h4 className="landing-step-title">Return & Recover</h4>
+              <p className="landing-step-desc">Connect securely, return the item, spread happiness!</p>
+            </div>
+          </div>
+
+          <div className="landing-safety-banner">
+            <div className="landing-safety-icon">🔒</div>
+            <div className="landing-safety-text">Your safety is our priority. All users are verified, all posts are reviewed, and all conversations are secure.</div>
+          </div>
+        </section>
+
+        {/* About Us Section */}
+        <section className="landing-section" id="about-us">
+          <h2 className="landing-title">About Us</h2>
+          <p className="landing-subtitle">Built exclusively to assist students of NIT Kurukshetra.</p>
+
+          <div className="landing-about-container">
+            <div>
+              <p className="landing-about-text">
+                CampusFind is a secure Lost & Found platform built exclusively for NIT Kurukshetra students. It helps students report lost belongings, share found items, and connect safely to recover their valuables. Our goal is to make the process of finding and returning lost items simple, reliable, and trustworthy within our campus community.
+              </p>
+              <div className="landing-about-values">
+                <div className="landing-about-value-item">
+                  <div className="landing-about-value-icon">🛡️</div>
+                  <div>
+                    <h5 className="landing-about-value-title">Safe & Secure</h5>
+                    <p className="landing-about-value-desc">Only verified NITKKR students can access the platform.</p>
+                  </div>
+                </div>
+                <div className="landing-about-value-item">
+                  <div className="landing-about-value-icon">🤝</div>
+                  <div>
+                    <h5 className="landing-about-value-title">Trusted Community</h5>
+                    <p className="landing-about-value-desc">Admin-approved posts to ensure authenticity.</p>
+                  </div>
+                </div>
+                <div className="landing-about-value-item">
+                  <div className="landing-about-value-icon">⚡</div>
+                  <div>
+                    <h5 className="landing-about-value-title">Quick & Efficient</h5>
+                    <p className="landing-about-value-desc">Designed to help students recover items faster.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="landing-about-img">
+              <img src="/nitkkr_admin.png" alt="NIT Kurukshetra Administration Building" />
+            </div>
+          </div>
+        </section>
+
+        {/* Contact Us Section */}
+        <section className="landing-section" id="contact-us">
+          <h2 className="landing-title">Contact Us</h2>
+          <p className="landing-subtitle">We're here to help! Reach out to us for any queries or support.</p>
+
+          <div className="landing-contact-container">
+            <div className="landing-contact-info-card">
+              <h4>Get in Touch</h4>
+              <div className="landing-contact-items">
+                <div className="landing-contact-item">
+                  <div className="landing-contact-icon">📧</div>
+                  <div>
+                    <div className="landing-contact-label">Email</div>
+                    <div className="landing-contact-value"><a href="mailto:mkmkbhojawas@gmail.com" style={{ color: 'inherit', textDecoration: 'none' }}>mkmkbhojawas@gmail.com</a></div>
+                  </div>
+                </div>
+                <div className="landing-contact-item">
+                  <div className="landing-contact-icon">📍</div>
+                  <div>
+                    <div className="landing-contact-label">Location</div>
+                    <div className="landing-contact-value">NIT Kurukshetra, Haryana, India</div>
+                  </div>
+                </div>
+                <div className="landing-contact-item">
+                  <div className="landing-contact-icon">🕒</div>
+                  <div>
+                    <div className="landing-contact-label">Support Hours</div>
+                    <div className="landing-contact-value">9:00 AM - 6:00 PM (Mon - Sat)</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="landing-socials">
+                <div className="landing-socials-label">Follow Us</div>
+                <div className="landing-social-icons">
+                  <a href="https://github.com" target="_blank" rel="noreferrer" className="landing-social-icon" style={{ textDecoration: 'none' }}>
+                    <span style={{ fontSize: '16px' }}>🐱</span>
+                  </a>
+                  <a href="https://linkedin.com/in/mohit_k0101" target="_blank" rel="noreferrer" className="landing-social-icon" style={{ textDecoration: 'none' }}>
+                    <span style={{ fontSize: '16px', fontWeight: 'bold' }}>in</span>
+                  </a>
+                  <a href="https://instagram.com" target="_blank" rel="noreferrer" className="landing-social-icon" style={{ textDecoration: 'none' }}>
+                    <span style={{ fontSize: '16px' }}>📸</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="landing-contact-form-card">
+              <form onSubmit={handleContactSubmit}>
+                <div className="landing-contact-form-grid" style={{ marginBottom: '20px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '12px' }}>Your Name</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      style={{ padding: '8px 12px', fontSize: '13px' }}
+                      placeholder="John Doe"
+                      value={contactName}
+                      onChange={(e) => setContactName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label className="form-label" style={{ fontSize: '12px' }}>Your Email</label>
+                    <input 
+                      type="email" 
+                      className="form-control" 
+                      style={{ padding: '8px 12px', fontSize: '13px' }}
+                      placeholder="john@example.com"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label className="form-label" style={{ fontSize: '12px' }}>Subject</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    style={{ padding: '8px 12px', fontSize: '13px' }}
+                    placeholder="Feedback or Query..."
+                    value={contactSubject}
+                    onChange={(e) => setContactSubject(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '24px' }}>
+                  <label className="form-label" style={{ fontSize: '12px' }}>Your Message</label>
+                  <textarea 
+                    className="form-control" 
+                    rows="4" 
+                    style={{ padding: '12px', fontSize: '13px' }}
+                    placeholder="Type your message here..."
+                    value={contactMessage}
+                    onChange={(e) => setContactMessage(e.target.value)}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary btn-block" disabled={isSendingContact}>
+                  {isSendingContact ? '⏳ Sending...' : '✈️ Send Message'}
+                </button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer */}
+        <footer className="landing-footer">
+          <span className="landing-footer-text">© 2025 CampusFind. All rights reserved.</span>
+          <div className="landing-footer-links">
+            <span className="landing-footer-link">Privacy Policy</span>
+            <span className="landing-footer-link">Terms & Conditions</span>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <>
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -106,43 +414,11 @@ export default function Dashboard() {
         <Topbar 
           title="Dashboard" 
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-          onSearchChange={isLoggedIn ? handleSearchChange : undefined}
+          onSearchChange={handleSearchChange}
         />
         
         <div className="page-body">
-          {!isLoggedIn ? (
-            <div id="hero-section">
-              <div className="hero-section">
-                <div className="hero-badge">🎓 Exclusive for NIT Kurukshetra Students</div>
-                <h1 className="hero-title">Find What You Lost.<br />Return What You Found.</h1>
-                <p className="hero-subtitle">CampusFind is a secure platform where NITKKR students can report lost items, post found belongings, and connect safely to recover them.</p>
-                <div className="hero-cta">
-                  <span onClick={() => navigate('/auth?tab=signup')} className="btn btn-primary btn-lg" style={{ cursor: 'pointer' }}>🚀 Get Started</span>
-                  <span onClick={() => navigate('/auth')} className="btn btn-ghost btn-lg" style={{ cursor: 'pointer', marginLeft: '12px' }}>🔐 Sign In</span>
-                </div>
-              </div>
-
-              <div className="stats-grid mb-6" style={{ marginBottom: '40px' }}>
-                <div className="stat-card">
-                  <div className="stat-value">🔐</div>
-                  <div className="stat-label">Verified Students Only</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">✅</div>
-                  <div className="stat-label">Admin Approved Posts</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">💬</div>
-                  <div className="stat-label">Secure Messaging</div>
-                </div>
-                <div className="stat-card">
-                  <div className="stat-value">🔔</div>
-                  <div className="stat-label">Smart Notifications</div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div id="dashboard-section">
+          <div id="dashboard-section">
               {user && (
                 <h2 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '20px' }}>
                   Welcome back, {getFirstName()}! 👋
@@ -299,8 +575,7 @@ export default function Dashboard() {
               )}
 
 
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </>
