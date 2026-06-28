@@ -27,7 +27,7 @@ const sendEmail = async (options) => {
       to: options.email,
       subject: options.subject,
       text: options.text,
-      html: `
+      html: options.html || `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff; color: #333333;">
           <div style="text-align: center; margin-bottom: 24px; border-bottom: 2px solid #efefef; padding-bottom: 16px;">
             <span style="font-size: 32px; font-weight: bold; color: #6366f1; letter-spacing: -1px;">🔍 CampusFind</span>

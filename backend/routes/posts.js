@@ -384,4 +384,58 @@ router.put('/:id/claim-found', protect, verifiedOnly, async (req, res) => {
   }
 });
 
+// @POST /api/posts/contact - Handle contact form submissions
+router.post('/contact', async (req, res) => {
+  const { name, email, subject, message } = req.body;
+  if (!name || !email || !message) {
+    return res.status(400).json({ success: false, message: 'Name, email, and message are required.' });
+  }
+
+  try {
+    const sendEmail = require('../utils/sendEmail');
+    
+    // Construct email content
+    const emailSubject = `📩 CampusFind Contact Form: ${subject || 'General Inquiry'}`;
+    const emailText = `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`;
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 12px; background-color: #ffffff; color: #333333;">
+        <div style="text-align: center; margin-bottom: 24px; border-bottom: 2px solid #efefef; padding-bottom: 16px;">
+          <span style="font-size: 32px; font-weight: bold; color: #6366f1; letter-spacing: -1px;">🔍 CampusFind Inbound</span>
+          <div style="font-size: 11px; text-transform: uppercase; color: #999; margin-top: 4px; letter-spacing: 1px;">Contact Form Submission</div>
+        </div>
+        
+        <h2 style="font-size: 20px; font-weight: 700; color: #1e1f29; margin-bottom: 16px;">New Inquiry Received</h2>
+        <div style="background-color: #f9fafb; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+          <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From Name:</strong> ${name}</p>
+          <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>From Email:</strong> ${email}</p>
+          <p style="margin: 0 0 8px 0; font-size: 14px;"><strong>Subject:</strong> ${subject || 'N/A'}</p>
+        </div>
+        
+        <p style="font-size: 14px; line-height: 1.6; color: #374151;"><strong>Message:</strong></p>
+        <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; font-size: 14px; line-height: 1.6; color: #1f2937; white-space: pre-wrap;">
+          ${message}
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #efefef; margin: 24px 0;">
+        <p style="font-size: 11px; color: #aaaaaa; text-align: center; margin: 0;">
+          This message was sent securely via the contact form on CampusFind NITKKR.
+        </p>
+      </div>
+    `;
+
+    // Send the email to the support mailbox
+    await sendEmail({
+      email: 'mkmkbhojawas@gmail.com', // Sending TO your support email
+      subject: emailSubject,
+      text: emailText,
+      html: emailHtml
+    });
+
+    res.json({ success: true, message: 'Message sent successfully.' });
+  } catch (err) {
+    console.error('Contact email sending failed:', err.message);
+    res.status(500).json({ success: false, message: 'Could not send message. Please try again later.' });
+  }
+});
+
 module.exports = router;
