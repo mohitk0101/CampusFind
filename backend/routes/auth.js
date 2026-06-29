@@ -29,27 +29,38 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email or roll number already registered.' });
     }
 
-    const verificationToken = uuidv4();
-    const user = await User.create({ name, rollNumber: rollNumber.toUpperCase(), email: email.toLowerCase(), password, verificationToken });
+    const isVerifiedBypassed = process.env.BYPASS_EMAIL_VERIFICATION === 'true';
+    const user = await User.create({ 
+      name, 
+      rollNumber: rollNumber.toUpperCase(), 
+      email: email.toLowerCase(), 
+      password, 
+      verificationToken: isVerifiedBypassed ? null : verificationToken,
+      isVerified: isVerifiedBypassed ? true : false
+    });
 
     const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${verificationToken}`;
 
-    // Send real verification email via Nodemailer
-    try {
-      await sendEmail({
-        email: email.toLowerCase(),
-        name,
-        subject: 'Verify your CampusFind Account',
-        text: `Hello ${name}, click the link to verify your email: ${verifyUrl}`,
-        verifyUrl
-      });
-    } catch (mailErr) {
-      console.warn(`⚠️ Real verification email failed to send: ${mailErr.message}`);
+    // Send real verification email via Nodemailer if not bypassed
+    if (!isVerifiedBypassed) {
+      try {
+        await sendEmail({
+          email: email.toLowerCase(),
+          name,
+          subject: 'Verify your CampusFind Account',
+          text: `Hello ${name}, click the link to verify your email: ${verifyUrl}`,
+          verifyUrl
+        });
+      } catch (mailErr) {
+        console.warn(`⚠️ Real verification email failed to send: ${mailErr.message}`);
+      }
     }
 
     res.status(201).json({
       success: true,
-      message: 'Registration successful! Please check your email to verify your account.',
+      message: isVerifiedBypassed 
+        ? 'Registration successful! Verification bypassed (Demo mode enabled).' 
+        : 'Registration successful! Please check your email to verify your account.',
       email: user.email
     });
   } catch (err) {
