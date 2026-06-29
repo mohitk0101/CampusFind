@@ -29,6 +29,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email or roll number already registered.' });
     }
 
+    const verificationToken = uuidv4();
     const isVerifiedBypassed = process.env.BYPASS_EMAIL_VERIFICATION === 'true';
     const user = await User.create({ 
       name, 
