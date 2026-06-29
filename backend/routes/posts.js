@@ -423,9 +423,9 @@ router.post('/contact', async (req, res) => {
       </div>
     `;
 
-    // Send the email to the support mailbox AND the sender as a confirmation receipt
+    // Send the email only to the support mailbox (so it works for all users in Resend sandbox mode)
     const sent = await sendEmail({
-      email: `mkmkbhojawas@gmail.com, ${email}`, 
+      email: 'mkmkbhojawas@gmail.com', 
       replyTo: email,
       subject: emailSubject,
       text: emailText,
