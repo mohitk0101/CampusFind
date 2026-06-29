@@ -25,6 +25,7 @@ const sendEmail = async (options) => {
     const mailOptions = {
       from: `"CampusFind NITKKR" <${emailUser}>`,
       to: options.email,
+      replyTo: options.replyTo,
       subject: options.subject,
       text: options.text,
       html: options.html || `

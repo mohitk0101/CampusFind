@@ -423,9 +423,10 @@ router.post('/contact', async (req, res) => {
       </div>
     `;
 
-    // Send the email to the support mailbox
+    // Send the email to the support mailbox AND the sender as a confirmation receipt
     const sent = await sendEmail({
-      email: 'mkmkbhojawas@gmail.com', // Sending TO your support email
+      email: `mkmkbhojawas@gmail.com, ${email}`, 
+      replyTo: email,
       subject: emailSubject,
       text: emailText,
       html: emailHtml
