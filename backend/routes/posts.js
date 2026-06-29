@@ -435,7 +435,7 @@ router.post('/contact', async (req, res) => {
     if (sent === false) {
       return res.status(500).json({ 
         success: false, 
-        message: 'Support email is not configured on the server. Please add RESEND_API_KEY to environment variables.' 
+        message: 'Support email is not configured on the server. Please add RESEND_API_KEY (for Render) or EMAIL_USER/EMAIL_PASS (for localhost) to environment variables.' 
       });
     }
 
