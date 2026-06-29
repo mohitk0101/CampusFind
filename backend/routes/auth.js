@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
     const verificationToken = uuidv4();
     const user = await User.create({ name, rollNumber: rollNumber.toUpperCase(), email: email.toLowerCase(), password, verificationToken });
 
-    const verifyUrl = `http://localhost:${process.env.PORT || 5000}/api/auth/verify/${verificationToken}`;
+    const verifyUrl = `${req.protocol}://${req.get('host')}/api/auth/verify/${verificationToken}`;
 
     // Send real verification email via Nodemailer
     try {

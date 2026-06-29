@@ -424,12 +424,19 @@ router.post('/contact', async (req, res) => {
     `;
 
     // Send the email to the support mailbox
-    await sendEmail({
+    const sent = await sendEmail({
       email: 'mkmkbhojawas@gmail.com', // Sending TO your support email
       subject: emailSubject,
       text: emailText,
       html: emailHtml
     });
+
+    if (sent === false) {
+      return res.status(500).json({ 
+        success: false, 
+        message: 'Support email is not configured on the server. Please add EMAIL_USER and EMAIL_PASS to environment variables.' 
+      });
+    }
 
     res.json({ success: true, message: 'Message sent successfully.' });
   } catch (err) {

@@ -60,11 +60,11 @@ const sendEmail = async (options) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 [REAL MAIL] Verification email sent successfully to ${options.email}. Message ID: ${info.messageId}`);
+    console.log(`📧 [REAL MAIL] Email sent successfully to ${options.email}. Message ID: ${info.messageId}`);
     return true;
   } catch (error) {
     console.error(`❌ [EMAIL ERROR] Failed to send real email to ${options.email}:`, error.message);
-    throw new Error('Verification email could not be sent to your inbox. Please try again later.');
+    throw new Error('Email could not be sent. Please check email configuration or try again later.');
   }
 };
 
