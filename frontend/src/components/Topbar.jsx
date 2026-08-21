@@ -89,7 +89,7 @@ export default function Topbar({ title, onToggleSidebar, onSearchChange }) {
           </div>
         )}
 
-        <div className="topbar-actions" style={{ marginLeft: onSearchChange === undefined ? 'auto' : '0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="topbar-actions" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {CF.isLoggedIn() && (
             <>
               <button 

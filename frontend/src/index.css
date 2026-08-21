@@ -314,11 +314,11 @@ input, textarea, select { font-family: var(--font); }
   font-size: 18px;
   font-weight: 700;
   color: var(--text-primary);
-  flex: 1;
 }
 .topbar-search {
   flex: 1;
   max-width: 400px;
+  min-width: 180px;
   position: relative;
 }
 .topbar-search input {
@@ -1462,6 +1462,8 @@ select.form-control option:checked {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 600px) {
+  .topbar-title { display: none; }
+  .topbar-search { min-width: 0; }
   .notif-panel { width: 100%; }
   .auth-card { padding: 24px; }
   .profile-header-card { flex-direction: column; text-align: center; }
