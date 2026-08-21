@@ -4,9 +4,25 @@ import { CF } from '../utils/api';
 
 export default function PostCard({ post, showActions = false, onDelete }) {
   const navigate = useNavigate();
-  const img = post.images && post.images.length > 0 ? post.images[post.coverImageIndex || 0] : null;
+  const [currentIdx, setCurrentIdx] = React.useState(0);
+  const images = post.images && post.images.length > 0 ? post.images : [];
+  const img = images[currentIdx];
   const user = CF.getUser();
   const isOwner = user && post.reporter && (post.reporter._id || post.reporter) === user._id;
+
+  let touchStartX = 0;
+  const handleTouchStart = (e) => {
+    touchStartX = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e) => {
+    if (images.length <= 1) return;
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (diff > 50 && currentIdx < images.length - 1) {
+      setCurrentIdx(prev => prev + 1);
+    } else if (diff < -50 && currentIdx > 0) {
+      setCurrentIdx(prev => prev - 1);
+    }
+  };
 
   const catColors = {
     'Wallet': 'color:#fbbf24;background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.2)',
@@ -49,14 +65,54 @@ export default function PostCard({ post, showActions = false, onDelete }) {
 
   return (
     <div className="post-card" onClick={handleCardClick} style={{ cursor: 'pointer' }}>
-      <div className="post-card-image" style={{ position: 'relative' }}>
+      <div 
+        className="post-card-image" 
+        style={{ position: 'relative' }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {img ? (
-          <img src={img} alt={post.itemName} />
+          <img src={img} alt={post.itemName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
           </div>
         )}
+
+        {images.length > 1 && (
+          <>
+            {currentIdx > 0 && (
+              <button 
+                type="button"
+                className="carousel-arrow left"
+                onClick={(e) => { e.stopPropagation(); setCurrentIdx(prev => prev - 1); }}
+                style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: 0, color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+              >
+                ‹
+              </button>
+            )}
+            {currentIdx < images.length - 1 && (
+              <button 
+                type="button"
+                className="carousel-arrow right"
+                onClick={(e) => { e.stopPropagation(); setCurrentIdx(prev => prev + 1); }}
+                style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.5)', border: 0, color: 'white', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 10 }}
+              >
+                ›
+              </button>
+            )}
+            
+            <div className="carousel-dots" style={{ position: 'absolute', bottom: '10px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '4px', zIndex: 10 }}>
+              {images.map((_, idx) => (
+                <span 
+                  key={idx} 
+                  style={{ width: '6px', height: '6px', borderRadius: '50%', background: currentIdx === idx ? 'var(--primary)' : 'rgba(255,255,255,0.4)', transition: 'background 0.2s' }}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
         <span className={`post-card-type-badge badge-${post.type}`}>
           {post.type}
         </span>

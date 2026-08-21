@@ -36,8 +36,8 @@ const postSchema = new mongoose.Schema({
   images: {
     type: [String],
     validate: {
-      validator: function(arr) { return arr.length >= 1 && arr.length <= 1; },
-      message: 'You must upload exactly 1 image'
+      validator: function(arr) { return arr.length >= 1 && arr.length <= 2; },
+      message: 'You must upload between 1 and 2 images'
     }
   },
   imageTypes: {

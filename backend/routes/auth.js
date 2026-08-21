@@ -7,7 +7,7 @@ const { protect } = require('../middleware/auth');
 const sendEmail = require('../utils/sendEmail');
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'campusfind_default_secret_key_12345', { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 };
 
 // @POST /api/auth/register

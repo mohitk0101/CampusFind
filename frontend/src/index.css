@@ -534,6 +534,16 @@ select.form-control option:checked {
   transition: transform 0.4s ease;
 }
 .post-card:hover .post-card-image img { transform: scale(1.05); }
+.carousel-arrow {
+  opacity: 0;
+  transition: opacity 0.2s, background-color 0.2s;
+}
+.post-card-image:hover .carousel-arrow {
+  opacity: 1;
+}
+.carousel-arrow:hover {
+  background: rgba(0,0,0,0.8) !important;
+}
 .post-card-type-badge {
   position: absolute;
   top: 12px; right: 12px;

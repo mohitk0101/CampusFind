@@ -64,8 +64,9 @@ export default function CreatePost() {
     if (!file) return;
     try {
       const compressed = await CF.compressImage(file);
-      setImages([compressed]);
+      setImages((prev) => [...prev, compressed]);
       setCoverImageIndex(0);
+      e.target.value = '';
     } catch (err) {
       alert('Error uploading image: ' + err.message);
     }
@@ -217,7 +218,7 @@ export default function CreatePost() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Image Upload (Max 1)</label>
+                <label className="form-label">Image Upload (Max 2)</label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   {images.map((img, idx) => (
                     <div 
@@ -234,12 +235,12 @@ export default function CreatePost() {
                       </button>
                     </div>
                   ))}
-                  {images.length < 1 && (
+                  {images.length < 2 && (
                     <div 
                       style={{ width: '80px', height: '80px', borderRadius: '8px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'var(--bg-elevated)', fontSize: '11px', color: 'var(--text-secondary)' }}
                       onClick={() => document.getElementById('image-upload-input').click()}
                     >
-                      <span>➕</span>
+                      <span style={{ fontSize: '18px', fontWeight: 600, marginBottom: '2px' }}>+</span>
                       <span>Upload</span>
                     </div>
                   )}

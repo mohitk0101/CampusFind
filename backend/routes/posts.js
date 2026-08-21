@@ -156,8 +156,8 @@ router.post('/', protect, verifiedOnly, async (req, res) => {
   try {
     const { itemName, type, category, description, location, date, images, imageTypes, coverImageIndex, questions } = req.body;
 
-    if (!images || images.length < 1 || images.length > 5) {
-      return res.status(400).json({ success: false, message: 'Upload between 1 and 5 images.' });
+    if (!images || images.length < 1 || images.length > 2) {
+      return res.status(400).json({ success: false, message: 'Upload between 1 and 2 images.' });
     }
     if (type === 'found' && imageTypes && imageTypes.some(t => t === 'reference')) {
       return res.status(400).json({ success: false, message: 'Found posts can only have actual photos, not reference images.' });
