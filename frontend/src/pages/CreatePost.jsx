@@ -60,15 +60,14 @@ export default function CreatePost() {
   }, [editId]);
 
   const handleImageUpload = async (e) => {
-    const files = Array.from(e.target.files);
-    if (images.length + files.length > 5) {
-      return alert('You can upload a maximum of 5 images.');
-    }
+    const file = e.target.files[0];
+    if (!file) return;
     try {
-      const base64s = await Promise.all(files.map(f => CF.fileToBase64(f)));
-      setImages((prev) => [...prev, ...base64s]);
+      const compressed = await CF.compressImage(file);
+      setImages([compressed]);
+      setCoverImageIndex(0);
     } catch (err) {
-      alert('Error uploading images: ' + err.message);
+      alert('Error uploading image: ' + err.message);
     }
   };
 
@@ -218,16 +217,14 @@ export default function CreatePost() {
               </div>
 
               <div className="form-group">
-                <label className="form-label">Images Upload (Max 5)</label>
+                <label className="form-label">Image Upload (Max 1)</label>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
                   {images.map((img, idx) => (
                     <div 
                       key={idx} 
-                      style={{ width: '80px', height: '80px', borderRadius: '8px', border: coverImageIndex === idx ? '1px solid var(--primary)' : '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}
-                      onClick={() => setCoverImageIndex(idx)}
-                      title="Click to set as cover image"
+                      style={{ width: '80px', height: '80px', borderRadius: '8px', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}
                     >
-                      <img src={img} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} />
+                      <img src={img} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       <button 
                         type="button" 
                         onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
@@ -235,12 +232,9 @@ export default function CreatePost() {
                       >
                         ✕
                       </button>
-                      {coverImageIndex === idx && (
-                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'var(--primary)', color: 'white', fontSize: '8px', textAlign: 'center', padding: '1px 0' }}>Cover</div>
-                      )}
                     </div>
                   ))}
-                  {images.length < 5 && (
+                  {images.length < 1 && (
                     <div 
                       style={{ width: '80px', height: '80px', borderRadius: '8px', border: '2px dashed var(--border)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'var(--bg-elevated)', fontSize: '11px', color: 'var(--text-secondary)' }}
                       onClick={() => document.getElementById('image-upload-input').click()}
@@ -254,7 +248,6 @@ export default function CreatePost() {
                   type="file" 
                   id="image-upload-input" 
                   accept="image/*" 
-                  multiple 
                   style={{ display: 'none' }} 
                   onChange={handleImageUpload} 
                 />
