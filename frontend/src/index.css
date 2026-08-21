@@ -535,11 +535,13 @@ select.form-control option:checked {
 }
 .post-card:hover .post-card-image img { transform: scale(1.05); }
 .carousel-arrow {
-  opacity: 0.8;
+  opacity: 0;
   transition: opacity 0.2s, background-color 0.2s;
 }
-.carousel-arrow:hover {
+.post-card-image:hover .carousel-arrow {
   opacity: 1;
+}
+.carousel-arrow:hover {
   background: rgba(0,0,0,0.9) !important;
 }
 .post-card-type-badge {
