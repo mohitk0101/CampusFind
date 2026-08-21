@@ -97,23 +97,25 @@ export default function MyItems() {
                       className="my-item-row"
                       onClick={() => navigate(`/post-detail?id=${post._id}`)}
                     >
-                      <div className="my-item-avatar">
+                      <div className="my-item-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
                         {img ? (
                           <img src={img} alt="thumbnail" />
                         ) : (
-                          CF.CATEGORY_ICONS[post.category] || '📦'
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
                         )}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div className="my-item-title">{post.itemName}</div>
                         <div className="my-item-meta">
-                          📍 {post.location} • 📅 {CF.formatDate(post.date)}
+                          {post.location} • {CF.formatDate(post.date)}
                         </div>
                       </div>
                       <span className={`my-item-badge ${getStatusBadgeClass(post.status)}`}>
                         {post.status}
                       </span>
-                      <div className="my-item-chevron">➔</div>
+                      <div className="my-item-chevron" style={{ display: 'flex', alignItems: 'center' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                      </div>
                     </div>
                   );
                 })}

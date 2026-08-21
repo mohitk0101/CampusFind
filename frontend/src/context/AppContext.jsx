@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { CF } from '../utils/api';
 
 const AppContext = createContext();
@@ -6,6 +6,25 @@ const AppContext = createContext();
 export function AppProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(CF.isLoggedIn());
   const [user, setUser] = useState(CF.getUser());
+  
+  // Theme state
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved === 'dark'; // default to false (light theme)
+  });
+
+  // Apply theme class to document body
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.add('dark-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.body.classList.remove('dark-theme');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
+
+  const toggleTheme = () => setIsDark(prev => !prev);
 
   // Cached data state
   const [stats, setStats] = useState(null);
@@ -107,7 +126,9 @@ export function AppProvider({ children }) {
       totalPages,
       getPosts,
       isLoading,
-      clearCache
+      clearCache,
+      isDark,
+      toggleTheme
     }}>
       {children}
     </AppContext.Provider>

@@ -4,6 +4,71 @@
    CSS CUSTOM PROPERTIES
    ============================== */
 :root {
+  --primary: #4f46e5;
+  --primary-dark: #3730a3;
+  --primary-light: #6366f1;
+  --primary-glow: rgba(79, 70, 229, 0.08);
+  --secondary: #10b981;
+  --secondary-dark: #059669;
+  --accent: #f59e0b;
+  --accent-dark: #d97706;
+  --danger: #ef4444;
+  --danger-dark: #dc2626;
+  --success: #10b981;
+  --warning: #f59e0b;
+
+  --bg-base: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.85);
+  --bg-input: #f1f5f9;
+  --bg-input-focus: #ffffff;
+
+  --border: #e2e8f0;
+  --border-focus: #4f46e5;
+  --border-card: #e2e8f0;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-inverse: #ffffff;
+
+  --badge-lost-bg: #fef2f2;
+  --badge-lost-text: #ef4444;
+  --badge-lost-border: rgba(239, 68, 68, 0.15);
+  
+  --badge-found-bg: #ecfdf5;
+  --badge-found-text: #10b981;
+  --badge-found-border: rgba(16, 185, 129, 0.15);
+  
+  --status-pending-bg: #fffbeb;
+  --status-pending-text: #d97706;
+  --status-pending-border: rgba(245, 158, 11, 0.15);
+  
+  --status-recovered-bg: #e0e7ff;
+  --status-recovered-text: #4f46e5;
+  --status-recovered-border: rgba(79, 70, 229, 0.15);
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.025);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.025);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.025);
+  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.05);
+
+  --sidebar-width: 260px;
+  --navbar-height: 64px;
+  --transition: 0.2s ease;
+}
+
+body.dark-theme {
   --primary: #6366f1;
   --primary-dark: #4f46e5;
   --primary-light: #818cf8;
@@ -35,21 +100,26 @@
   --text-muted: #5c5f7a;
   --text-inverse: #0a0b14;
 
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
+  --badge-lost-bg: rgba(239, 68, 68, 0.2);
+  --badge-lost-text: #fca5a5;
+  --badge-lost-border: rgba(239, 68, 68, 0.3);
+  
+  --badge-found-bg: rgba(34, 197, 94, 0.2);
+  --badge-found-text: #86efac;
+  --badge-found-border: rgba(34, 197, 94, 0.3);
+  
+  --status-pending-bg: rgba(245, 158, 11, 0.2);
+  --status-pending-text: #fcd34d;
+  --status-pending-border: rgba(245, 158, 11, 0.3);
+  
+  --status-recovered-bg: rgba(99, 102, 241, 0.2);
+  --status-recovered-text: #a5b4fc;
+  --status-recovered-border: rgba(99, 102, 241, 0.3);
 
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
   --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
   --shadow-glow: 0 0 30px rgba(99,102,241,0.2);
-
-  --sidebar-width: 260px;
-  --navbar-height: 64px;
-  --transition: 0.2s ease;
 }
 
 /* ==============================
@@ -112,7 +182,8 @@ input, textarea, select { font-family: var(--font); }
    SIDEBAR
    ============================== */
 .sidebar-brand {
-  padding: 20px 20px 16px;
+  height: var(--navbar-height);
+  padding: 0 20px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -391,15 +462,15 @@ select.form-control {
   padding-right: 32px !important;
 }
 select.form-control option {
-  background-color: #181929;
-  color: #f0f0ff;
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
   padding: 8px 12px;
 }
 select.form-control option:hover,
 select.form-control option:focus,
 select.form-control option:checked {
-  background-color: #4f46e5;
-  color: #ffffff;
+  background-color: var(--primary);
+  color: var(--text-inverse);
 }
 .form-hint { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
 .form-error { font-size: 12px; color: var(--danger); margin-top: 5px; }
@@ -449,7 +520,7 @@ select.form-control option:checked {
 .post-card:hover {
   transform: translateY(-4px);
   border-color: var(--primary);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.4), var(--shadow-glow);
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
 }
 .post-card-image {
   height: 200px;
@@ -465,7 +536,7 @@ select.form-control option:checked {
 .post-card:hover .post-card-image img { transform: scale(1.05); }
 .post-card-type-badge {
   position: absolute;
-  top: 12px; left: 12px;
+  top: 12px; right: 12px;
   padding: 4px 12px;
   border-radius: var(--radius-full);
   font-size: 11px;
@@ -475,14 +546,14 @@ select.form-control option:checked {
   backdrop-filter: blur(10px);
 }
 .badge-lost {
-  background: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  border: 1px solid rgba(239,68,68,0.3);
+  background: var(--badge-lost-bg);
+  color: var(--badge-lost-text);
+  border: 1px solid var(--badge-lost-border);
 }
 .badge-found {
-  background: rgba(34, 197, 94, 0.2);
-  color: #86efac;
-  border: 1px solid rgba(34,197,94,0.3);
+  background: var(--badge-found-bg);
+  color: var(--badge-found-text);
+  border: 1px solid var(--badge-found-border);
 }
 .post-card-status {
   position: absolute;
@@ -493,10 +564,10 @@ select.form-control option:checked {
   font-weight: 700;
   backdrop-filter: blur(10px);
 }
-.status-pending { background: rgba(245,158,11,0.2); color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
-.status-approved { background: rgba(34,197,94,0.2); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
-.status-recovered, .status-returned { background: rgba(99,102,241,0.2); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
-.status-rejected { background: rgba(239,68,68,0.2); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.status-pending { background: var(--status-pending-bg); color: var(--status-pending-text); border: 1px solid var(--status-pending-border); }
+.status-approved { background: var(--badge-found-bg); color: var(--badge-found-text); border: 1px solid var(--badge-found-border); }
+.status-recovered, .status-returned { background: var(--status-recovered-bg); color: var(--status-recovered-text); border: 1px solid var(--status-recovered-border); }
+.status-rejected { background: var(--badge-lost-bg); color: var(--badge-lost-text); border: 1px solid var(--badge-lost-border); }
 .post-card-body { padding: 16px; }
 .post-card-category {
   font-size: 11px;
@@ -549,16 +620,30 @@ select.form-control option:checked {
   border-radius: var(--radius-full);
   font-size: 12px;
   font-weight: 600;
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   border: 1px solid var(--border);
   color: var(--text-secondary);
   transition: all var(--transition);
   cursor: pointer;
 }
-.chip:hover, .chip.active {
-  background: var(--primary-glow);
-  border-color: var(--primary);
-  color: var(--primary-light);
+.chip:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+.chip.chip-all.active {
+  background: rgba(79, 70, 229, 0.08) !important;
+  border-color: #4f46e5 !important;
+  color: #4f46e5 !important;
+}
+.chip.chip-lost.active {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-color: #ef4444 !important;
+  color: #ef4444 !important;
+}
+.chip.chip-found.active {
+  background: rgba(16, 185, 129, 0.08) !important;
+  border-color: #10b981 !important;
+  color: #10b981 !important;
 }
 .chips-wrap { display: flex; flex-wrap: wrap; gap: 8px; }
 
@@ -901,6 +986,9 @@ select.form-control option:checked {
   gap: 12px;
   background: var(--bg-glass);
   backdrop-filter: blur(20px);
+}
+.chat-back-btn {
+  display: none !important;
 }
 .messages-area {
   flex: 1;
@@ -1336,11 +1424,37 @@ select.form-control option:checked {
     grid-template-columns: 1fr;
   }
   .chat-layout {
-    flex-direction: column;
+    flex-direction: row;
+  }
+  .chat-layout:not(.has-active-conv) .chat-area {
+    display: none !important;
+  }
+  .chat-layout.has-active-conv .conversations-list {
+    display: none !important;
   }
   .conversations-list {
-    width: 100%;
-    max-height: 200px;
+    width: 100% !important;
+    max-height: none !important;
+  }
+  .chat-area {
+    width: 100% !important;
+  }
+  .chat-back-btn {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 8px;
+    margin-right: 4px;
+    border-radius: 50%;
+    transition: background 0.2s;
+  }
+  .chat-back-btn:hover {
+    background: var(--bg-card-hover);
   }
   .hero-title { font-size: 36px; }
   .page-body { padding: 20px 16px; }

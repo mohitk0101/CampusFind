@@ -171,12 +171,15 @@ export default function Profile() {
             <div className="profile-info">
               <div className="profile-name">{user?.name || 'Loading...'}</div>
               <div className="profile-meta">
-                <span>📧 {user?.email}</span>
-                <span>🎓 {user?.rollNumber}</span>
-                {user?.department && <span>🏛️ {user.department}</span>}
-                {user?.year && <span>📅 Year {user.year}</span>}
+                <span>{user?.email}</span>
+                <span>Roll: {user?.rollNumber}</span>
+                {user?.department && <span>{user.department}</span>}
+                {user?.year && <span>Year {user.year}</span>}
               </div>
-              <div className="verified-badge">✅ Verified Student</div>
+              <div className="verified-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '4px 12px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', marginTop: '8px' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '2px' }}><polyline points="20 6 9 17 4 12"/></svg>
+                Verified Student
+              </div>
             </div>
           </div>
 

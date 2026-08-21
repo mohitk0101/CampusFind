@@ -46,7 +46,9 @@ export default function Sidebar({ isOpen, onClose }) {
       <div className={`sidebar-overlay ${isOpen ? 'active' : ''}`} onClick={onClose} />
       <div className={`sidebar ${isOpen ? 'active' : ''}`}>
         <div className="sidebar-brand">
-          <div className="brand-logo">🔍</div>
+          <div className="brand-logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+          </div>
           <div className="brand-text">
             <div className="brand-name">CampusFind</div>
             <div className="brand-sub">NIT Kurukshetra</div>
@@ -55,13 +57,13 @@ export default function Sidebar({ isOpen, onClose }) {
         <nav className="sidebar-nav">
           <div className="nav-section-label">Navigation</div>
           <div className={`nav-item ${isActive('/') ? 'active' : ''}`} onClick={() => navTo('/')}>
-            <span className="nav-icon">🏠</span> Dashboard
+            Dashboard
           </div>
           <div className={`nav-item ${isActive('/create-post') ? 'active' : ''}`} onClick={() => navTo('/create-post')}>
-            <span className="nav-icon">➕</span> Report Item
+            Report Item
           </div>
           <div className={`nav-item ${isActive('/chat') ? 'active' : ''}`} onClick={() => navTo('/chat')}>
-            <span className="nav-icon">💬</span> Messages
+            Messages
             {unreadMsg > 0 && (
               <span className="nav-badge nav-msg-badge">{unreadMsg > 9 ? '9+' : unreadMsg}</span>
             )}
@@ -69,20 +71,20 @@ export default function Sidebar({ isOpen, onClose }) {
 
           <div className="nav-section-label">My Account</div>
           <div className={`nav-item ${isActive('/profile') ? 'active' : ''}`} onClick={() => navTo('/profile')}>
-            <span className="nav-icon">👤</span> Profile
+            Profile
           </div>
           <div className={`nav-item ${isActive('/my-items') ? 'active' : ''}`} onClick={() => navTo('/my-items')}>
-            <span className="nav-icon">📦</span> My Items
+            My Items
           </div>
 
           {user && user.role === 'admin' && (
             <div className={`nav-item ${isActive('/admin') ? 'active' : ''}`} onClick={() => navTo('/admin')}>
-              <span className="nav-icon">⚡</span> Admin Panel
+              Admin Panel
             </div>
           )}
 
           <div className="nav-item" onClick={handleLogout}>
-            <span className="nav-icon">🚪</span> Logout
+            Logout
           </div>
         </nav>
         
@@ -98,7 +100,7 @@ export default function Sidebar({ isOpen, onClose }) {
               </div>
               <div className="sidebar-user-info">
                 <div className="user-name">{user.name}</div>
-                <div className="user-role">{user.role === 'admin' ? '⚡ Admin' : `@${user.rollNumber}`}</div>
+                <div className="user-role">{user.role === 'admin' ? 'Admin' : `@${user.rollNumber}`}</div>
               </div>
             </div>
           )}

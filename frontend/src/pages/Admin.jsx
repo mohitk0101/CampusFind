@@ -174,7 +174,9 @@ export default function Admin() {
                                 {img ? (
                                   <img src={img} alt="item" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                 ) : (
-                                  <div style={{ fontSize: '32px' }}>{CF.CATEGORY_ICONS[post.category] || '📦'}</div>
+                                  <div style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                                  </div>
                                 )}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
@@ -185,7 +187,7 @@ export default function Admin() {
                                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{CF.timeAgo(post.createdAt)}</span>
                                 </div>
                                 <div className="font-bold text-sm" style={{ marginBottom: '4px' }}>{post.itemName}</div>
-                                <div className="text-xs text-muted mb-2">📍 {post.location} • Category: {post.category}</div>
+                                <div className="text-xs text-muted mb-2">{post.location} • Category: {post.category}</div>
                                 <p className="text-xs text-secondary" style={{ lineHeight: 1.4, margin: '8px 0' }}>{post.description}</p>
                                 
                                 {post.reporter && (
@@ -195,17 +197,17 @@ export default function Admin() {
                                 <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
                                   {activeTab === 'pending' && (
                                     <>
-                                      <button className="btn btn-secondary btn-sm" onClick={() => handleApprove(post._id)}>✅ Approve</button>
-                                      <button className="btn btn-danger btn-sm" onClick={() => handleOpenRejectModal(post._id)}>✕ Reject</button>
+                                      <button className="btn btn-secondary btn-sm" onClick={() => handleApprove(post._id)}>Approve</button>
+                                      <button className="btn btn-danger btn-sm" onClick={() => handleOpenRejectModal(post._id)}>Reject</button>
                                     </>
                                   )}
                                   {activeTab === 'active' && (
-                                    <button className="btn btn-danger btn-sm" onClick={() => handleOpenRejectModal(post._id)}>✕ Reject/Take Down</button>
+                                    <button className="btn btn-danger btn-sm" onClick={() => handleOpenRejectModal(post._id)}>Reject/Take Down</button>
                                   )}
                                   {activeTab === 'archived' && (
-                                    <button className="btn btn-secondary btn-sm" onClick={() => handleActivate(post._id)}>✅ Activate</button>
+                                    <button className="btn btn-secondary btn-sm" onClick={() => handleActivate(post._id)}>Activate</button>
                                   )}
-                                  <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/post-detail?id=${post._id}`)}>👁️ View Details</button>
+                                  <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/post-detail?id=${post._id}`)}>View Details</button>
                                 </div>
                               </div>
                             </div>
@@ -217,7 +219,7 @@ export default function Admin() {
                 </div>
 
                 <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>📊 Database Metrics</h3>
+                  <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px' }}>Database Metrics</h3>
                   {stats && (
                     <div className="card">
                       <div className="card-body" style={{ padding: '16px 20px' }}>

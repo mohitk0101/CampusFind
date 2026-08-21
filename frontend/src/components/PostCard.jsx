@@ -53,23 +53,23 @@ export default function PostCard({ post, showActions = false, onDelete }) {
         {img ? (
           <img src={img} alt={post.itemName} />
         ) : (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px' }}>
-            {CF.CATEGORY_ICONS[post.category] || '📦'}
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
           </div>
         )}
-        <span className={`post-card-type-badge badge-${post.type}`} style={{ position: 'absolute', top: '12px', left: '12px', textTransform: 'uppercase', fontSize: '10px', fontWeight: 700 }}>
+        <span className={`post-card-type-badge badge-${post.type}`}>
           {post.type}
-        </span>
-        <span style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, background: 'rgba(0,0,0,0.45)', padding: '3px 8px', borderRadius: '10px' }}>
-          {CF.timeAgo(post.createdAt)}
         </span>
       </div>
       <div className="post-card-body" style={{ padding: '16px' }}>
         <div className="post-card-title" style={{ fontSize: '15px', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
           {post.itemName}
         </div>
-        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '12px' }}>
-          <span>📍</span> <span>{post.location}</span>
+        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+          <span>{post.location}</span>
+        </div>
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+          {CF.timeAgo(post.createdAt)}
         </div>
         <div style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, ...parseInlineStyle(categoryStyle) }}>
           {post.category}

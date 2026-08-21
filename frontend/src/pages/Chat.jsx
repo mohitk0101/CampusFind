@@ -134,7 +134,10 @@ export default function Chat() {
 
       // Default fallback: open the first conversation in the list
       if (convs.length > 0) {
-        openConversation(convs[0]);
+        // Auto-open only on larger screens (desktop/tablet), show list on mobile
+        if (window.innerWidth > 900) {
+          openConversation(convs[0]);
+        }
       }
     };
     init();
@@ -326,7 +329,7 @@ export default function Chat() {
       <div className="main-content">
         <Topbar title="Messages" onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div style={{ display: 'flex', height: 'calc(100vh - var(--navbar-height))' }}>
+        <div className={`chat-layout ${activeConv ? 'has-active-conv' : ''}`} style={{ height: 'calc(100vh - var(--navbar-height))' }}>
 
           {/* ── Conversations List ─────────────────────────────────────────── */}
           <div className="conversations-list">
@@ -377,6 +380,15 @@ export default function Chat() {
               <>
                 {/* Header */}
                 <div className="chat-header">
+                  <button 
+                    type="button" 
+                    className="chat-back-btn" 
+                    onClick={() => setActiveConv(null)}
+                    title="Back to conversations"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                  </button>
                   <div className="conv-avatar" style={{ width: '36px', height: '36px', fontSize: '13px' }}>
                     {activeConv.otherUser?.profilePicture
                       ? <img src={activeConv.otherUser.profilePicture} alt={activeConv.otherUser.name} />
@@ -441,16 +453,16 @@ export default function Chat() {
 
                 {/* Input area */}
                 <form className="chat-input-area" onSubmit={handleSend}>
-                  <button
-                    type="button"
-                    className="icon-btn"
-                    onClick={() => imageInputRef.current?.click()}
-                    title="Send Image"
-                    style={{ position: 'relative' }}
+                  <button 
+                    type="button" 
+                    className="icon-btn attachment-btn" 
+                    onClick={() => imageInputRef.current.click()} 
+                    title="Attach image"
+                    style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                   >
-                    📎
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                     {pendingImage && (
-                      <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '10px', height: '10px', background: 'var(--primary)', borderRadius: '50%' }} />
+                      <span style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: 'var(--primary)', borderRadius: '50%' }} />
                     )}
                   </button>
                   <input
@@ -470,13 +482,15 @@ export default function Chat() {
                     autoComplete="off"
                   />
                   <button type="submit" className="btn btn-primary" disabled={isSending || (!text.trim() && !pendingImage)}>
-                    Send ➤
+                    Send
                   </button>
                 </form>
               </>
             ) : (
               <div className="empty-state" style={{ margin: 'auto' }}>
-                <div className="empty-icon">💬</div>
+                <div className="empty-icon" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px', color: 'var(--text-muted)' }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
                 <div className="empty-title">Select a conversation</div>
                 <div className="empty-text">Choose a conversation from the list to start messaging.</div>
               </div>

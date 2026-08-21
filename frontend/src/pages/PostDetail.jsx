@@ -165,15 +165,21 @@ export default function PostDetail() {
                   </div>
 
                   <h1 style={{ fontSize: '24px', fontWeight: 900, marginTop: '20px', marginBottom: '8px' }}>{post.itemName}</h1>
-                  <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                    <span>📍 {post.location}</span>
-                    <span>📅 {CF.formatDate(post.date)}</span>
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px', alignItems: 'center' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      {post.location}
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign: 'middle' }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      {CF.formatDate(post.date)}
+                    </span>
                   </div>
 
                   <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-primary)', marginBottom: '24px' }}>{post.description}</p>
                   
                   <div style={{ borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                    <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>🔒 Verification Questions</h3>
+                    <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>Verification Questions</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div className="card" style={{ padding: '12px 16px', background: 'var(--bg-elevated)' }}>
                         <div className="text-sm text-muted mb-2">Q1: {post.type === 'lost' ? 'What color/unique markings does it have?' : 'Describe any unique identifier (e.g. brand, stickers).'}</div>
@@ -192,22 +198,22 @@ export default function PostDetail() {
 
                   {post.status === 'rejected' && post.rejectionReason && (
                     <div style={{ marginTop: '16px', padding: '16px', borderRadius: 'var(--radius-md)', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)' }}>
-                      <div className="font-bold text-danger" style={{ marginBottom: '4px' }}>❌ Rejected</div>
+                      <div className="font-bold text-danger" style={{ marginBottom: '4px' }}>Rejected</div>
                       <div className="text-sm">Reason: {post.rejectionReason}</div>
                     </div>
                   )}
 
                   {post.status === 'active' && CF.isLoggedIn() && (
                     <div className="card mt-4" style={{ padding: '16px', background: 'var(--bg-elevated)', marginTop: '20px' }}>
-                      <div className="font-bold mb-2">🤝 Exchange Resolution Status</div>
+                      <div className="font-bold mb-2">Exchange Resolution Status</div>
                       <p className="text-xs text-muted mb-3">To resolve this post, both the owner must confirm receipt and the finder must confirm handover.</p>
                       
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
                         <div className="text-sm">
-                          ● Owner Receipt: <strong>{post.ownerConfirmed ? '✅ Confirmed' : '⏳ Pending'}</strong> {post.owner ? `(${post.owner.name || 'Student'})` : '(Not Claimed)'}
+                          ● Owner Receipt: <strong>{post.ownerConfirmed ? 'Confirmed' : 'Pending'}</strong> {post.owner ? `(${post.owner.name || 'Student'})` : '(Not Claimed)'}
                         </div>
                         <div className="text-sm">
-                          ● Finder Handover: <strong>{post.finderConfirmed ? '✅ Confirmed' : '⏳ Pending'}</strong> {post.finder ? `(${post.finder.name || 'Student'})` : '(Not Claimed)'}
+                          ● Finder Handover: <strong>{post.finderConfirmed ? 'Confirmed' : 'Pending'}</strong> {post.finder ? `(${post.finder.name || 'Student'})` : '(Not Claimed)'}
                         </div>
                       </div>
 
@@ -216,34 +222,34 @@ export default function PostDetail() {
                           <>
                             {/* Owner Role: Confirm receipt only after someone claimed it */}
                             {isOwner && post.finder && !post.ownerConfirmed && (
-                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmReceipt}>✅ Confirm Receipt</button>
+                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmReceipt}>Confirm Receipt</button>
                             )}
 
                             {/* Finder Role: Confirm handover only after claiming it */}
                             {!isOwner && post.finder && (post.finder._id || post.finder) === user?._id && !post.finderConfirmed && (
-                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmHandover}>🤝 Confirm Handover</button>
+                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmHandover}>Confirm Handover</button>
                             )}
 
                             {/* Any other student (who doesn't have the item) sees Claim button */}
                             {!isOwner && !post.finder && (
-                              <button className="btn btn-primary btn-sm" onClick={handleClaimLost}>🙋 I Found This Item</button>
+                              <button className="btn btn-primary btn-sm" onClick={handleClaimLost}>I Found This Item</button>
                             )}
                           </>
                         ) : (
                           <>
                             {/* Finder Role: Confirm handover only after owner claimed it */}
                             {isOwner && post.owner && !post.finderConfirmed && (
-                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmHandover}>🤝 Confirm Handover</button>
+                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmHandover}>Confirm Handover</button>
                             )}
 
                             {/* Owner Role: Confirm receipt only after claiming it */}
                             {!isOwner && post.owner && (post.owner._id || post.owner) === user?._id && !post.ownerConfirmed && (
-                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmReceipt}>✅ Confirm Receipt</button>
+                              <button className="btn btn-secondary btn-sm" onClick={handleConfirmReceipt}>Confirm Receipt</button>
                             )}
 
                             {/* Any other student (who doesn't have the item) sees Claim button */}
                             {!isOwner && !post.owner && (
-                              <button className="btn btn-primary btn-sm" onClick={handleClaimFound}>🙋 This is My Item</button>
+                              <button className="btn btn-primary btn-sm" onClick={handleClaimFound}>This is My Item</button>
                             )}
                           </>
                         )}
@@ -279,30 +285,30 @@ export default function PostDetail() {
                   {!isOwner && CF.isLoggedIn() && post.status === 'active' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <button className="btn btn-primary btn-block" onClick={() => setChatModalOpen(true)}>
-                        💬 {post.type === 'lost' ? 'Message Owner' : 'Message Finder'}
+                        {post.type === 'lost' ? 'Message Owner' : 'Message Finder'}
                       </button>
                       <button className="btn btn-ghost btn-block" onClick={handleReportPost} style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
-                        ⚠️ Report Post
+                        Report Post
                       </button>
                     </div>
                   )}
                   {!CF.isLoggedIn() && (
-                    <span onClick={() => navigate('/auth')} className="btn btn-primary btn-block" style={{ cursor: 'pointer' }}>🔐 Login to Contact</span>
+                    <span onClick={() => navigate('/auth')} className="btn btn-primary btn-block" style={{ cursor: 'pointer' }}>Login to Contact</span>
                   )}
                   {isOwner && (
-                    <div className="chip" style={{ display: 'block', textAlign: 'center' }}>👤 This is your post</div>
+                    <div className="chip" style={{ display: 'block', textAlign: 'center' }}>This is your post</div>
                   )}
                 </div>
               </div>
 
               <div className="card mb-4" style={{ marginBottom: '16px' }}>
-                <div className="card-header"><div className="card-title">🛡️ Safety Tips</div></div>
+                <div className="card-header"><div className="card-title">Safety Tips</div></div>
                 <div className="card-body" style={{ fontSize: '13px', lineHeight: '1.6' }}>
                   <ul style={{ paddingLeft: '16px', margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <li>🤝 <strong>Meet in a public place</strong> (e.g. library, cafeteria).</li>
-                    <li>🔍 <strong>Verify the item details</strong> before handing over.</li>
-                    <li>🔒 <strong>Do not share personal info</strong> or addresses.</li>
-                    <li>⚠️ <strong>Report suspicious activity</strong> to the admin.</li>
+                    <li><strong>Meet in a public place</strong> (e.g. library, cafeteria).</li>
+                    <li><strong>Verify the item details</strong> before handing over.</li>
+                    <li><strong>Do not share personal info</strong> or addresses.</li>
+                    <li><strong>Report suspicious activity</strong> to the admin.</li>
                   </ul>
                 </div>
               </div>
@@ -312,7 +318,7 @@ export default function PostDetail() {
                 <div className="card-body">
                   <div className="text-sm" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Posted</span><span>{CF.timeAgo(post.createdAt)}</span></div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Type</span><span>{post.type === 'lost' ? '🔴 Lost' : '🟢 Found'}</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Type</span><span>{post.type === 'lost' ? 'Lost' : 'Found'}</span></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Category</span><span>{post.category}</span></div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}><span className="text-muted">Status</span><span style={{ fontWeight: 700 }}>{post.status.toUpperCase()}</span></div>
                   </div>
