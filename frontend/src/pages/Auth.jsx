@@ -134,7 +134,7 @@ export default function Auth() {
                   <input 
                     type="text" 
                     className="form-control" 
-                    placeholder="Rahul Sharma" 
+                    placeholder="Mohit Kumar" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -145,7 +145,7 @@ export default function Auth() {
                   <input 
                     type="text" 
                     className="form-control" 
-                    placeholder="124102101" 
+                    placeholder="Roll No." 
                     value={rollNumber}
                     onChange={(e) => setRollNumber(e.target.value)}
                     required
@@ -157,7 +157,7 @@ export default function Auth() {
                 <input 
                   type="email" 
                   className="form-control" 
-                  placeholder="124102101@nitkkr.ac.in" 
+                  placeholder="rollno@nitkkr.ac.in" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

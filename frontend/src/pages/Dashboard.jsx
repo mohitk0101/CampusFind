@@ -81,10 +81,6 @@ export default function Dashboard() {
     setIsLoading(false);
   };
 
-  useEffect(() => {
-    setIsLoggedIn(CF.isLoggedIn());
-    setUser(CF.getUser());
-  }, []);
 
   useEffect(() => {
     if (isLoggedIn) {
