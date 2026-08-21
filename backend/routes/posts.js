@@ -44,11 +44,27 @@ router.get('/', async (req, res) => {
 router.get('/dashboard-stats', async (req, res) => {
   try {
     const verifiedStatuses = ['active', 'resolved', 'archived'];
-    const totalLost = await Post.countDocuments({ type: 'lost', status: { $in: verifiedStatuses } });
-    const totalFound = await Post.countDocuments({ type: 'found', status: { $in: verifiedStatuses } });
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    // Run all 6 queries in parallel to drastically improve loading speeds
+    const [
+      totalLost,
+      totalFound,
+      totalResolvedPosts,
+      lostThisWeek,
+      foundThisWeek,
+      resolvedThisWeekPosts
+    ] = await Promise.all([
+      Post.countDocuments({ type: 'lost', status: { $in: verifiedStatuses } }),
+      Post.countDocuments({ type: 'found', status: { $in: verifiedStatuses } }),
+      Post.find({ status: 'resolved' }),
+      Post.countDocuments({ type: 'lost', status: { $in: verifiedStatuses }, createdAt: { $gte: oneWeekAgo } }),
+      Post.countDocuments({ type: 'found', status: { $in: verifiedStatuses }, createdAt: { $gte: oneWeekAgo } }),
+      Post.find({ status: 'resolved', resolvedAt: { $gte: oneWeekAgo } })
+    ]);
+
     const totalPosts = totalLost + totalFound;
 
-    const totalResolvedPosts = await Post.find({ status: 'resolved' });
     const uniqueResolvedKeys = new Set();
     let totalResolved = 0;
     totalResolvedPosts.forEach(post => {
@@ -68,12 +84,8 @@ router.get('/dashboard-stats', async (req, res) => {
       }
     });
 
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const lostThisWeek = await Post.countDocuments({ type: 'lost', status: { $in: verifiedStatuses }, createdAt: { $gte: oneWeekAgo } });
-    const foundThisWeek = await Post.countDocuments({ type: 'found', status: { $in: verifiedStatuses }, createdAt: { $gte: oneWeekAgo } });
     const totalThisWeek = lostThisWeek + foundThisWeek;
 
-    const resolvedThisWeekPosts = await Post.find({ status: 'resolved', resolvedAt: { $gte: oneWeekAgo } });
     const uniqueResolvedThisWeekKeys = new Set();
     let resolvedThisWeek = 0;
     resolvedThisWeekPosts.forEach(post => {
