@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Environment Variables (Contains private keys and passwords)
+.env
+frontend/.env
+*.local
+
+# Production Build outputs
+dist/
+frontend/dist/
+
+# System / Temp files
+.DS_Store
+Thumbs.db
+*.log
+
+# Scratch Scripts
+scratch/
+scratch_test.js
+scratch_test_group.js
