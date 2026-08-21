@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CF } from '../utils/api';
+import { useAppContext } from '../context/AppContext';
 
 export default function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [user, setUser] = useState(CF.getUser());
+  const { user, logoutUser } = useAppContext();
   const [unreadMsg, setUnreadMsg] = useState(0);
 
   useEffect(() => {
-    setUser(CF.getUser());
-
     const fetchUnread = async () => {
       if (!CF.isLoggedIn() || !CF.getUser()) return;
       try {
@@ -28,7 +27,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const handleLogout = () => {
     if (window.confirm('Are you sure you want to log out?')) {
-      CF.clearAuth();
+      logoutUser();
       navigate('/auth');
     }
   };

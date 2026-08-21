@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CF } from '../utils/api';
+import { useAppContext } from '../context/AppContext';
 
 export default function Auth() {
   const navigate = useNavigate();
+  const { loginUser } = useAppContext();
   const [tab, setTab] = useState('login');
   
   const [email, setEmail] = useState('');
@@ -23,7 +25,7 @@ export default function Auth() {
     setIsLoading(true);
     try {
       const data = await CF.apiPost('/auth/login', { email, password });
-      CF.setAuth(data.token, data.user);
+      loginUser(data.token, data.user);
       setIsLoading(false);
       navigate(data.user.role === 'admin' ? '/admin' : '/');
     } catch (err) {

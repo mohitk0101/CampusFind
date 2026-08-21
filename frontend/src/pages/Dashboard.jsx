@@ -5,18 +5,24 @@ import Topbar from '../components/Topbar';
 import Sidebar from '../components/Sidebar';
 import PostCard from '../components/PostCard';
 
+import { useAppContext } from '../context/AppContext';
+
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { 
+    isLoggedIn, 
+    user, 
+    stats, 
+    getStats, 
+    posts, 
+    totalPosts, 
+    totalPages, 
+    getPosts, 
+    isLoading 
+  } = useAppContext();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(CF.isLoggedIn());
-  const [user, setUser] = useState(CF.getUser());
-  
-  const [stats, setStats] = useState(null);
-  const [posts, setPosts] = useState([]);
-  const [totalPosts, setTotalPosts] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   
   const [filterType, setFilterType] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
@@ -32,10 +38,9 @@ export default function Dashboard() {
   const [isSendingContact, setIsSendingContact] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
 
-  const fetchStats = async () => {
+  const fetchStats = async (force = false) => {
     try {
-      const data = await CF.apiGet('/posts/dashboard-stats');
-      setStats(data.stats);
+      await getStats(force);
     } catch (e) {
       console.error(e);
     }
@@ -60,25 +65,20 @@ export default function Dashboard() {
     return params.toString();
   };
 
-  const fetchPosts = async (append = false) => {
+  const fetchPosts = async (append = false, force = false) => {
     if (!isLoggedIn) return;
-    setIsLoading(true);
     try {
       const pageNo = append ? currentPage + 1 : 1;
-      const data = await CF.apiGet(`/posts?${buildQueryString(pageNo)}`);
-      setTotalPages(data.pages);
-      setTotalPosts(data.total);
+      const queryStr = buildQueryString(pageNo);
+      await getPosts(queryStr, force, append);
       if (append) {
-        setPosts((prev) => [...prev, ...(data.posts || [])]);
         setCurrentPage(pageNo);
       } else {
-        setPosts(data.posts || []);
         setCurrentPage(1);
       }
     } catch (e) {
       console.error(e);
     }
-    setIsLoading(false);
   };
 
 
@@ -580,7 +580,15 @@ export default function Dashboard() {
                         <option value="newest">Sort: Newest</option>
                         <option value="oldest">Sort: Oldest</option>
                       </select>
-                      <button className="icon-btn" style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', height: '34px', width: '34px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⇅</button>
+                      <button 
+                        type="button" 
+                        className="icon-btn" 
+                        title="Refresh data"
+                        onClick={() => { fetchStats(true); fetchPosts(false, true); }}
+                        style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', height: '34px', width: '34px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: 'var(--bg-elevated)', color: 'var(--text-secondary)' }}
+                      >
+                        🔄
+                      </button>
                     </div>
                   </div>
                 </div>
