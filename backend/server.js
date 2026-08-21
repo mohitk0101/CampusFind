@@ -10,7 +10,13 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(express.static(path.join(__dirname, '../frontend/dist')));
+const fs = require('fs');
+const frontendDistPath = path.join(__dirname, '../frontend/dist');
+
+// Serve static assets if the folder exists (for unified deploy or local testing)
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+}
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
@@ -19,10 +25,19 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/admin', require('./routes/admin'));
 
-// Serve frontend for all non-API routes
+// Root route fallback for API-only deploy
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'CampusFind API is running successfully.' });
+});
+
+// Serve frontend for all other non-API routes if it exists
 app.get('*', (req, res) => {
   if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
+    if (fs.existsSync(path.join(frontendDistPath, 'index.html'))) {
+      res.sendFile(path.join(frontendDistPath, 'index.html'));
+    } else {
+      res.status(404).json({ success: false, message: 'Route not found. This is an API-only server deployment.' });
+    }
   }
 });
 
