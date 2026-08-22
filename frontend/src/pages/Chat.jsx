@@ -19,6 +19,8 @@ export default function Chat() {
   const [pendingImage, setPendingImage] = useState(null);
   const [postContext, setPostContext] = useState(null);
   const [isDeletingConv, setIsDeletingConv] = useState(false);
+  const [isLoadingConvs, setIsLoadingConvs] = useState(true);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   const user = CF.getUser();
   const userId = user?._id?.toString();
@@ -27,6 +29,7 @@ export default function Chat() {
 
   const pollRef = useRef(null);
   const imageInputRef = useRef(null);
+  const hasInitializedRef = useRef(false);
 
   // ─── Scroll to bottom ────────────────────────────────────────────────────
   const scrollToBottom = (force = false) => {
@@ -84,60 +87,72 @@ export default function Chat() {
     setMessages([]);
     setPostContext(null);
     setPendingImage(null);
-    loadMessages(convKey);
+    setIsLoadingMessages(true);
+    loadMessages(convKey).finally(() => {
+      setIsLoadingMessages(false);
+    });
     loadPostContext(conv.post?._id);
   }, [loadMessages, loadPostContext]);
 
   // ─── Initial load ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (!CF.isLoggedIn()) { navigate('/auth'); return; }
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
 
     const init = async () => {
-      const convs = await loadConversations();
-      const currentUserId = CF.getUser()?._id;
+      try {
+        setIsLoadingConvs(true);
+        const convs = await loadConversations();
+        const currentUserId = CF.getUser()?._id;
 
-      if (initialPost && initialUser) {
-        // Try to find matching conversation in existing list
-        const match = convs.find(c =>
-          c.post?._id?.toString() === initialPost &&
-          c.otherUser?._id?.toString() === initialUser
-        );
-        if (match) {
-          openConversation(match);
-          return;
-        }
-
-        // If not found, fetch post details to open a new conversation
-        try {
-          const postRes = await CF.apiGet(`/posts/${initialPost}`);
-          const post = postRes.post;
-          if (post) {
-            const isMeReporter = (post.reporter?._id || post.reporter)?.toString() === currentUserId?.toString();
-            let otherUser = post.reporter;
-            if (isMeReporter) {
-              otherUser = {
-                _id: initialUser,
-                name: 'Student'
-              };
-            }
-            const mockConv = {
-              post: post,
-              otherUser: otherUser
-            };
-            openConversation(mockConv);
+        if (initialPost && initialUser) {
+          // Try to find matching conversation in existing list
+          const match = convs.find(c =>
+            c.post?._id?.toString() === initialPost &&
+            c.otherUser?._id?.toString() === initialUser
+          );
+          if (match) {
+            openConversation(match);
             return;
           }
-        } catch (e) {
-          console.error('Failed to load post context for new conversation:', e);
-        }
-      }
 
-      // Default fallback: open the first conversation in the list
-      if (convs.length > 0) {
-        // Auto-open only on larger screens (desktop/tablet), show list on mobile
-        if (window.innerWidth > 900) {
-          openConversation(convs[0]);
+          // If not found, fetch post details to open a new conversation
+          try {
+            const postRes = await CF.apiGet(`/posts/${initialPost}`);
+            const post = postRes.post;
+            if (post) {
+              const isMeReporter = (post.reporter?._id || post.reporter)?.toString() === currentUserId?.toString();
+              let otherUser = post.reporter;
+              if (isMeReporter) {
+                otherUser = {
+                  _id: initialUser,
+                  name: 'Student'
+                };
+              }
+              const mockConv = {
+                post: post,
+                otherUser: otherUser
+              };
+              openConversation(mockConv);
+              return;
+            }
+          } catch (e) {
+            console.error('Failed to load post context for new conversation:', e);
+          }
         }
+
+        // Default fallback: open the first conversation in the list
+        if (convs.length > 0) {
+          // Auto-open only on larger screens (desktop/tablet), show list on mobile
+          if (window.innerWidth > 900) {
+            openConversation(convs[0]);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoadingConvs(false);
       }
     };
     init();
@@ -337,7 +352,19 @@ export default function Chat() {
               Conversations
             </div>
             <div id="conv-items" style={{ overflowY: 'auto', flex: 1 }}>
-              {conversations.length === 0 ? (
+              {isLoadingConvs ? (
+                <div style={{ padding: '8px 16px' }}>
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
+                      <div className="skeleton-pulse" style={{ width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0 }} />
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="skeleton-pulse" style={{ width: '40%', height: '12px', borderRadius: '4px' }} />
+                        <div className="skeleton-pulse" style={{ width: '70%', height: '10px', borderRadius: '4px' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : conversations.length === 0 ? (
                 <div className="empty-state" style={{ padding: '40px 16px' }}>
                   <div className="empty-icon">💬</div>
                   <div className="empty-title">No messages</div>
@@ -420,8 +447,12 @@ export default function Chat() {
                 {renderResolutionBar()}
 
                 {/* Messages */}
-                <div className="messages-area">
-                  {messages.length === 0 ? (
+                <div className="messages-area" style={{ position: 'relative', display: 'flex', flexDirection: 'column' }}>
+                  {isLoadingMessages ? (
+                    <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <div className="spinner-loader" />
+                    </div>
+                  ) : messages.length === 0 ? (
                     <div className="empty-state" style={{ margin: 'auto' }}>
                       <div className="empty-icon">💬</div>
                       <div className="empty-title">No messages yet</div>

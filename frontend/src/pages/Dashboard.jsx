@@ -18,7 +18,9 @@ export default function Dashboard() {
     totalPosts, 
     totalPages, 
     getPosts, 
-    isLoading 
+    isLoading,
+    isDark,
+    toggleTheme
   } = useAppContext();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -37,6 +39,7 @@ export default function Dashboard() {
   const [contactMessage, setContactMessage] = useState('');
   const [isSendingContact, setIsSendingContact] = useState(false);
   const [activeNav, setActiveNav] = useState('home');
+  const [landingMenuOpen, setLandingMenuOpen] = useState(false);
 
   const fetchStats = async (force = false) => {
     try {
@@ -142,18 +145,63 @@ export default function Dashboard() {
       <div className="landing-page">
         {/* Navigation Header */}
         <header className="landing-nav">
-          <div className="landing-logo" onClick={() => scrollToSection('home')}>
-            CampusFind
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              type="button"
+              className="landing-menu-toggle"
+              onClick={() => setLandingMenuOpen(!landingMenuOpen)}
+              aria-label="Toggle navigation menu"
+            >
+              ☰
+            </button>
+            <div className="landing-logo" onClick={() => scrollToSection('home')}>
+              CampusFind
+            </div>
           </div>
-          <nav className="landing-nav-links">
+
+          <nav className="landing-nav-links desktop-only">
             <span className={`landing-nav-link ${activeNav === 'home' ? 'active' : ''}`} onClick={() => scrollToSection('home')}>Home</span>
             <span className={`landing-nav-link ${activeNav === 'how-it-works' ? 'active' : ''}`} onClick={() => scrollToSection('how-it-works')}>How It Works</span>
             <span className={`landing-nav-link ${activeNav === 'about-us' ? 'active' : ''}`} onClick={() => scrollToSection('about-us')}>About Us</span>
             <span className={`landing-nav-link ${activeNav === 'developer' ? 'active' : ''}`} onClick={() => scrollToSection('developer')}>Developer</span>
             <span className={`landing-nav-link ${activeNav === 'contact-us' ? 'active' : ''}`} onClick={() => scrollToSection('contact-us')}>Contact</span>
-            <button className="landing-nav-btn" onClick={() => navigate('/auth')}>Sign In</button>
           </nav>
+
+          <div className="landing-nav-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              className="icon-btn theme-toggle-btn" 
+              onClick={toggleTheme} 
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '6px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '8px', width: '32px', height: '32px' }}
+            >
+              {isDark ? (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              )}
+            </button>
+            <button className="landing-nav-btn sign-in-accent-btn" onClick={() => navigate('/auth')}>Sign In</button>
+          </div>
         </header>
+
+        {/* Mobile Nav Drawer */}
+        {landingMenuOpen && (
+          <div className="landing-mobile-menu" onClick={() => setLandingMenuOpen(false)}>
+            <div className="landing-mobile-menu-content" onClick={(e) => e.stopPropagation()}>
+              <div className="landing-mobile-menu-header">
+                <span className="landing-logo">CampusFind</span>
+                <button className="landing-mobile-menu-close" onClick={() => setLandingMenuOpen(false)}>✕</button>
+              </div>
+              <nav className="landing-mobile-links">
+                <span className={`landing-mobile-link ${activeNav === 'home' ? 'active' : ''}`} onClick={() => { scrollToSection('home'); setLandingMenuOpen(false); }}>Home</span>
+                <span className={`landing-mobile-link ${activeNav === 'how-it-works' ? 'active' : ''}`} onClick={() => { scrollToSection('how-it-works'); setLandingMenuOpen(false); }}>How It Works</span>
+                <span className={`landing-mobile-link ${activeNav === 'about-us' ? 'active' : ''}`} onClick={() => { scrollToSection('about-us'); setLandingMenuOpen(false); }}>About Us</span>
+                <span className={`landing-mobile-link ${activeNav === 'developer' ? 'active' : ''}`} onClick={() => { scrollToSection('developer'); setLandingMenuOpen(false); }}>Developer</span>
+                <span className={`landing-mobile-link ${activeNav === 'contact-us' ? 'active' : ''}`} onClick={() => { scrollToSection('contact-us'); setLandingMenuOpen(false); }}>Contact</span>
+              </nav>
+            </div>
+          </div>
+        )}
 
         {/* Hero Section */}
         <section className="landing-section" id="home" style={{ display: 'flex', flexDirection: 'column', minHeight: '85vh', justifyContent: 'center', alignItems: 'center' }}>
