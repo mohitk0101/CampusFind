@@ -1,5 +1,14 @@
-# CampusFind
+- 🌐 **Live Demo:** [CampusFind](https://campus-find-livid.vercel.app/)
+- 
+## 🔑 Demo Credentials
 
+CampusFind is designed specifically for NIT Kurukshetra students, so registration is restricted to valid college email addresses.
+For users who don't have an NIT KKR email, a demo account is provided to explore the application:
+
+- **Email:** `demo@nitkkr.ac.in`
+- **Password:** `demo123`
+
+# CampusFind
 Lost and found portal for NIT Kurukshetra. Students can report lost or found items, verify ownership through custom questions, chat with other users, and manage active listings.
 
 ## Features
