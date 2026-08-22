@@ -1,4 +1,4 @@
-- 🌐 **Live Demo:** [CampusFind](https://campus-find-livid.vercel.app/)
+ **Live Demo:** [CampusFind](https://campus-find-livid.vercel.app/)
   
 ##  Demo Credentials
 
