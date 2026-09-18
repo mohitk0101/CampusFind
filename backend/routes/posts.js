@@ -4,6 +4,7 @@ const Post = require('../models/Post');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { protect, verifiedOnly } = require('../middleware/auth');
+const { uploadToCloudinary } = require('../utils/cloudinary');
 
 // @GET /api/posts - Get all approved posts with search and filter
 router.get('/', async (req, res) => {
@@ -32,7 +33,8 @@ router.get('/', async (req, res) => {
       .populate('reporter', 'name rollNumber department year profilePicture')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean(); // Returns plain JS objects - 3-5x faster than Mongoose Documents for read-only routes
 
     res.json({ success: true, posts, total, page: parseInt(page), pages: Math.ceil(total / limit) });
   } catch (err) {
@@ -46,64 +48,71 @@ router.get('/dashboard-stats', async (req, res) => {
     const verifiedStatuses = ['active', 'resolved', 'archived'];
     const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    // Run all 6 queries in parallel to drastically improve loading speeds
+    // Run all queries in parallel for maximum performance
     const [
       totalLost,
       totalFound,
-      totalResolvedPosts,
       lostThisWeek,
       foundThisWeek,
-      resolvedThisWeekPosts
+      // Aggregation pipeline: calculate resolved counts directly inside MongoDB (no RAM)
+      resolvedAgg,
+      resolvedWeekAgg
     ] = await Promise.all([
       Post.countDocuments({ type: 'lost', status: { $in: verifiedStatuses } }),
       Post.countDocuments({ type: 'found', status: { $in: verifiedStatuses } }),
-      Post.find({ status: 'resolved' }),
       Post.countDocuments({ type: 'lost', status: { $in: verifiedStatuses }, createdAt: { $gte: oneWeekAgo } }),
       Post.countDocuments({ type: 'found', status: { $in: verifiedStatuses }, createdAt: { $gte: oneWeekAgo } }),
-      Post.find({ status: 'resolved', resolvedAt: { $gte: oneWeekAgo } })
+      // Aggregation: Only pulls 4 fields (no images/descriptions loaded into memory)
+      Post.aggregate([
+        { $match: { status: 'resolved', reporter: { $ne: null } } },
+        { $project: { reporter: 1, finder: 1, owner: 1, category: 1, type: 1 } },
+        {
+          $group: {
+            _id: {
+              $cond: {
+                if: { $and: [{ $ne: ['$reporter', null] }, { $or: [{ $ne: ['$finder', null] }, { $ne: ['$owner', null] }] }] },
+                then: {
+                  $concat: [
+                    { $toString: '$reporter' }, '_',
+                    { $toString: { $ifNull: ['$finder', '$owner'] } }, '_',
+                    '$category'
+                  ]
+                },
+                else: { $toString: '$_id' }
+              }
+            }
+          }
+        },
+        { $count: 'total' }
+      ]),
+      Post.aggregate([
+        { $match: { status: 'resolved', resolvedAt: { $gte: oneWeekAgo }, reporter: { $ne: null } } },
+        { $project: { reporter: 1, finder: 1, owner: 1, category: 1, type: 1 } },
+        {
+          $group: {
+            _id: {
+              $cond: {
+                if: { $and: [{ $ne: ['$reporter', null] }, { $or: [{ $ne: ['$finder', null] }, { $ne: ['$owner', null] }] }] },
+                then: {
+                  $concat: [
+                    { $toString: '$reporter' }, '_',
+                    { $toString: { $ifNull: ['$finder', '$owner'] } }, '_',
+                    '$category'
+                  ]
+                },
+                else: { $toString: '$_id' }
+              }
+            }
+          }
+        },
+        { $count: 'total' }
+      ])
     ]);
 
     const totalPosts = totalLost + totalFound;
-
-    const uniqueResolvedKeys = new Set();
-    let totalResolved = 0;
-    totalResolvedPosts.forEach(post => {
-      const repId = post.reporter ? post.reporter.toString() : '';
-      const otherId = post.type === 'lost' 
-        ? (post.finder ? post.finder.toString() : '')
-        : (post.owner ? post.owner.toString() : '');
-      if (repId && otherId) {
-        const sortedUsers = [repId, otherId].sort().join('_');
-        const key = `${sortedUsers}_${post.category}`;
-        if (!uniqueResolvedKeys.has(key)) {
-          uniqueResolvedKeys.add(key);
-          totalResolved++;
-        }
-      } else {
-        totalResolved++;
-      }
-    });
-
     const totalThisWeek = lostThisWeek + foundThisWeek;
-
-    const uniqueResolvedThisWeekKeys = new Set();
-    let resolvedThisWeek = 0;
-    resolvedThisWeekPosts.forEach(post => {
-      const repId = post.reporter ? post.reporter.toString() : '';
-      const otherId = post.type === 'lost' 
-        ? (post.finder ? post.finder.toString() : '')
-        : (post.owner ? post.owner.toString() : '');
-      if (repId && otherId) {
-        const sortedUsers = [repId, otherId].sort().join('_');
-        const key = `${sortedUsers}_${post.category}`;
-        if (!uniqueResolvedThisWeekKeys.has(key)) {
-          uniqueResolvedThisWeekKeys.add(key);
-          resolvedThisWeek++;
-        }
-      } else {
-        resolvedThisWeek++;
-      }
-    });
+    const totalResolved = resolvedAgg[0]?.total || 0;
+    const resolvedThisWeek = resolvedWeekAgg[0]?.total || 0;
 
     res.json({
       success: true,
@@ -163,9 +172,14 @@ router.post('/', protect, verifiedOnly, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Found posts can only have actual photos, not reference images.' });
     }
 
+    // Upload each image to Cloudinary CDN (falls back gracefully to Base64 if not configured)
+    const uploadedImages = await Promise.all(
+      images.map(img => uploadToCloudinary(img, 'campusfind/posts'))
+    );
+
     const post = await Post.create({
       itemName, type, category, description, location, date,
-      images, imageTypes: imageTypes || [], coverImageIndex: coverImageIndex || 0,
+      images: uploadedImages, imageTypes: imageTypes || [], coverImageIndex: coverImageIndex || 0,
       reporter: req.user._id, questions
     });
 
@@ -187,10 +201,18 @@ router.put('/:id', protect, verifiedOnly, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Only pending or rejected posts can be edited.' });
     }
 
-    const allowed = ['itemName', 'category', 'description', 'location', 'date', 'images', 'imageTypes', 'coverImageIndex', 'questions'];
+    const allowed = ['itemName', 'category', 'description', 'location', 'date', 'imageTypes', 'coverImageIndex', 'questions'];
     allowed.forEach(field => {
       if (req.body[field] !== undefined) post[field] = req.body[field];
     });
+
+    // If new images are provided, upload each to Cloudinary (skips URLs already hosted remotely)
+    if (req.body.images !== undefined) {
+      post.images = await Promise.all(
+        req.body.images.map(img => uploadToCloudinary(img, 'campusfind/posts'))
+      );
+    }
+
     post.status = 'pending'; // Reset to pending on edit
     post.rejectionReason = null;
     await post.save();

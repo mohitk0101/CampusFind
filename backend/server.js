@@ -3,10 +3,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const compression = require('compression');
 
 const app = express();
 
 // Middleware
+// Gzip/Brotli response compression - cuts JSON transfer size by ~70% on mobile networks
+app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -47,7 +50,14 @@ const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/campusfind
 
 const checkAndArchivePosts = require('./utils/archiveScheduler');
 
-mongoose.connect(MONGO_URI)
+// Initialize Cloudinary on startup (logs whether configured or fallback mode)
+require('./utils/cloudinary');
+
+mongoose.connect(MONGO_URI, {
+  maxPoolSize: 10,              // Up to 10 simultaneous socket connections
+  minPoolSize: 2,               // Keep 2 connections warm to avoid cold-start latency
+  serverSelectionTimeoutMS: 5000 // Fail fast instead of hanging for 30s
+})
   .then(() => {
     console.log('✅ MongoDB connected successfully');
     

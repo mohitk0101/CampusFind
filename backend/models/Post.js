@@ -99,12 +99,18 @@ const postSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Text index for search
+// Text index for full-text search on item name, description, location
 postSchema.index({
   itemName: 'text',
   description: 'text',
   location: 'text'
 });
+
+// Compound indexes for high-frequency query patterns
+postSchema.index({ status: 1, createdAt: -1 });           // Main dashboard feed
+postSchema.index({ status: 1, type: 1, category: 1 });    // Filter chips (Lost/Found + Category)
+postSchema.index({ reporter: 1, status: 1 });             // "My Items" user page
+postSchema.index({ status: 1, resolvedAt: -1 });          // Dashboard stats resolved queries
 
 module.exports = mongoose.model('Post', postSchema);
 module.exports.CATEGORIES = CATEGORIES;

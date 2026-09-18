@@ -31,4 +31,8 @@ const messageSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Compound indexes for chat thread and conversation list queries
+messageSchema.index({ post: 1, createdAt: 1 });             // Fetch thread messages in order
+messageSchema.index({ sender: 1, receiver: 1, post: 1 });   // Conversation pair lookup
+
 module.exports = mongoose.model('Message', messageSchema);
