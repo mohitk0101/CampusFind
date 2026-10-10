@@ -6,6 +6,28 @@ const AppContext = createContext();
 export function AppProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(CF.isLoggedIn());
   const [user, setUser] = useState(CF.getUser());
+
+  // The localStorage user is only a display cache. Validate the real session
+  // with the backend; apiFetch will refresh an expired access cookie if possible.
+  useEffect(() => {
+    let cancelled = false;
+    const restoreSession = async () => {
+      try {
+        const data = await CF.apiGet('/auth/me');
+        if (cancelled) return;
+        CF.setAuth(data.user);
+        setUser(data.user);
+        setIsLoggedIn(true);
+      } catch {
+        if (cancelled) return;
+        CF.clearAuth();
+        setUser(null);
+        setIsLoggedIn(false);
+      }
+    };
+    restoreSession();
+    return () => { cancelled = true; };
+  }, []);
   
   // Theme state
   const [isDark, setIsDark] = useState(() => {
@@ -44,18 +66,25 @@ export function AppProvider({ children }) {
     return Date.now() - lastFetched < 60000; // 60 seconds
   };
 
-  const loginUser = (token, userObj) => {
-    CF.setAuth(token, userObj);
+  const loginUser = (userObj) => {
+    CF.setAuth(userObj);
     setIsLoggedIn(true);
     setUser(userObj);
     clearCache();
   };
 
-  const logoutUser = () => {
-    CF.clearAuth();
-    setIsLoggedIn(false);
-    setUser(null);
-    clearCache();
+  const logoutUser = async () => {
+    try {
+      await CF.apiPost('/auth/logout', {});
+    } catch (error) {
+      // Clear the local UI even if the network is unavailable.
+      console.warn('Server logout request failed:', error.message);
+    } finally {
+      CF.clearAuth();
+      setIsLoggedIn(false);
+      setUser(null);
+      clearCache();
+    }
   };
 
   const clearCache = () => {

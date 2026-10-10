@@ -25,7 +25,7 @@ export default function Auth() {
     setIsLoading(true);
     try {
       const data = await CF.apiPost('/auth/login', { email, password });
-      loginUser(data.token, data.user);
+      loginUser(data.user);
       setIsLoading(false);
       navigate(data.user.role === 'admin' ? '/admin' : '/');
     } catch (err) {

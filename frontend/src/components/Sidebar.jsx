@@ -25,9 +25,9 @@ export default function Sidebar({ isOpen, onClose }) {
     return () => clearInterval(interval);
   }, [location.pathname]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (window.confirm('Are you sure you want to log out?')) {
-      logoutUser();
+      await logoutUser();
       navigate('/auth');
     }
   };

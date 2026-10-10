@@ -1,36 +1,119 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
+// Refresh requests are shared so several simultaneous 401s don't rotate the
+// same refresh token concurrently and accidentally invalidate the session.
+let refreshPromise = null;
+
+const AUTH_ENDPOINTS_WITHOUT_AUTO_REFRESH = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/logout',
+];
+
+async function readResponse(res) {
+  const text = await res.text();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+async function refreshSession() {
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      const res = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const data = await readResponse(res);
+      if (!res.ok) {
+        CF.clearAuth();
+        throw new Error(data.message || 'Your session expired. Please log in again.');
+      }
+      if (data.user) CF.setAuth(data.user);
+      return data;
+    })().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 export const CF = {
-  getToken: () => localStorage.getItem('cf_token'),
+  // Access and refresh tokens must never be read from or stored in localStorage.
+  // Keep getToken temporarily for compatibility with older UI code.
+  getToken: () => null,
+
   getUser: () => {
     const u = localStorage.getItem('cf_user');
     try { return u ? JSON.parse(u) : null; } catch { return null; }
   },
-  setAuth: (token, user) => {
-    localStorage.setItem('cf_token', token);
-    localStorage.setItem('cf_user', JSON.stringify(user));
-  },
-  clearAuth: () => {
+
+  // Accept both setAuth(user) and the old setAuth(token, user) signature,
+  // but deliberately persist only the non-sensitive user display cache.
+  setAuth: (tokenOrUser, maybeUser) => {
+    const user = maybeUser || tokenOrUser;
+    if (user && typeof user === 'object') {
+      localStorage.setItem('cf_user', JSON.stringify(user));
+    }
     localStorage.removeItem('cf_token');
+  },
+
+  clearAuth: () => {
+    localStorage.removeItem('cf_token'); // remove any legacy token
     localStorage.removeItem('cf_user');
   },
-  isLoggedIn: () => !!localStorage.getItem('cf_token'),
+
+  // This is a UI hint only; the server cookie is the actual authentication.
+  isLoggedIn: () => !!CF.getUser(),
 
   apiFetch: async (path, options = {}) => {
-    const token = CF.getToken();
-    const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
-    const data = await res.json();
+    const headers = { ...(options.headers || {}) };
+    const hasBody = options.body !== undefined && options.body !== null;
+    const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    if (hasBody && !isFormData && !headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    const requestOptions = {
+      ...options,
+      headers,
+      credentials: 'include',
+    };
+
+    let res = await fetch(`${API_BASE}${path}`, requestOptions);
+
+    const isAuthEndpoint = AUTH_ENDPOINTS_WITHOUT_AUTO_REFRESH.some((endpoint) =>
+      path === endpoint || path.startsWith(`${endpoint}?`)
+    );
+
+    if (res.status === 401 && !isAuthEndpoint) {
+      try {
+        await refreshSession();
+        // Retry once with the newly issued HttpOnly access cookie.
+        res = await fetch(`${API_BASE}${path}`, requestOptions);
+      } catch (err) {
+        CF.clearAuth();
+        throw err;
+      }
+    }
+
+    const data = await readResponse(res);
     if (!res.ok) {
-      throw new Error(data.message || 'Request failed');
+      if (res.status === 401 && !isAuthEndpoint) CF.clearAuth();
+      throw new Error(data.message || `Request failed (${res.status})`);
     }
     return data;
   },
 
   apiGet: (path) => CF.apiFetch(path, { method: 'GET' }),
-  apiPost: (path, body) => CF.apiFetch(path, { method: 'POST', body: JSON.stringify(body) }),
-  apiPut: (path, body) => CF.apiFetch(path, { method: 'PUT', body: JSON.stringify(body) }),
+  apiPost: (path, body) => CF.apiFetch(path, { method: 'POST', body: JSON.stringify(body ?? {}) }),
+  apiPut: (path, body) => CF.apiFetch(path, { method: 'PUT', body: JSON.stringify(body ?? {}) }),
   apiDelete: (path) => CF.apiFetch(path, { method: 'DELETE' }),
 
   fileToBase64: (file) => {
