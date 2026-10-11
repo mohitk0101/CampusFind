@@ -1,5 +1,5 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 const ACCESS_COOKIE = 'cf_access';
 
@@ -44,4 +44,4 @@ const verifiedOnly = (req, res, next) => {
   return res.status(403).json({ success: false, message: 'Please verify your email first.' });
 };
 
-module.exports = { protect, adminOnly, verifiedOnly };
+export { protect, adminOnly, verifiedOnly };

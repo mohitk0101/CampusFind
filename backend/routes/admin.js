@@ -1,9 +1,9 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const Post = require('../models/Post');
-const User = require('../models/User');
-const Notification = require('../models/Notification');
-const { protect, adminOnly } = require('../middleware/auth');
+import Post from '../models/Post.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
+import { protect, adminOnly } from '../middleware/auth.js';
 
 const REJECTION_REASONS = ['Spam', 'Duplicate', 'Fake', 'Wrong Category', 'Not Campus Related', 'Inappropriate Content', 'Other'];
 
@@ -247,4 +247,4 @@ router.get('/rejection-reasons', protect, adminOnly, (req, res) => {
   res.json({ success: true, reasons: REJECTION_REASONS });
 });
 
-module.exports = router;
+export default router;

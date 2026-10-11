@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const notificationSchema = new mongoose.Schema({
   user: {
@@ -29,4 +29,4 @@ const notificationSchema = new mongoose.Schema({
 // Compound index for fast user notification bell lookup (unread first)
 notificationSchema.index({ user: 1, isRead: 1, createdAt: -1 });
 
-module.exports = mongoose.model('Notification', notificationSchema);
+export default mongoose.model('Notification', notificationSchema);

@@ -1,5 +1,5 @@
-const Post = require('../models/Post');
-const Notification = require('../models/Notification');
+import Post from '../models/Post.js';
+import Notification from '../models/Notification.js';
 
 /**
  * Periodically runs to archive active posts that have been live for 30 days,
@@ -57,4 +57,4 @@ const checkAndArchivePosts = async () => {
   }
 };
 
-module.exports = checkAndArchivePosts;
+export default checkAndArchivePosts;

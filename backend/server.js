@@ -1,12 +1,27 @@
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const path = require('path');
-const compression = require('compression');
-const fs = require('fs');
+import 'dotenv/config';
+import express from 'express';
+import { createServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import csrfProtection from './middleware/csrfProtection.js';
+import authRoutes from './routes/auth.js';
+import postRoutes from './routes/posts.js';
+import messageRoutes from './routes/messages.js';
+import notificationRoutes from './routes/notifications.js';
+import adminRoutes from './routes/admin.js';
+import checkAndArchivePosts from './utils/archiveScheduler.js';
+import './utils/cloudinary.js';
+import Post from './models/Post.js';
+import { attachSocketServer } from './utils/socket.js';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import cookieParser from 'cookie-parser';
+import path from 'path';
+import compression from 'compression';
+import fs from 'fs';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const app = express();
 app.set('trust proxy', 1); // Render runs behind a proxy; safe for HTTPS deployments.
 
@@ -31,16 +46,16 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
-app.use(require('./middleware/csrfProtection'));
+app.use(csrfProtection);
 
 const frontendDistPath = path.join(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendDistPath)) app.use(express.static(frontendDistPath));
 
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/posts', require('./routes/posts'));
-app.use('/api/messages', require('./routes/messages'));
-app.use('/api/notifications', require('./routes/notifications'));
-app.use('/api/admin', require('./routes/admin'));
+app.use('/api/auth', authRoutes);
+app.use('/api/posts', postRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'CampusFind API is running successfully.' });
@@ -63,8 +78,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/campusfind';
-const checkAndArchivePosts = require('./utils/archiveScheduler');
-require('./utils/cloudinary');
+
 
 mongoose.connect(MONGO_URI)
   .then(() => {
@@ -73,7 +87,6 @@ mongoose.connect(MONGO_URI)
 
     const migrateStatuses = async () => {
       try {
-        const Post = require('./models/Post');
         const resApproved = await Post.updateMany({ status: 'approved' }, { status: 'active' });
         const resRecovered = await Post.updateMany({ status: 'recovered' }, { status: 'resolved', resolvedAt: new Date() });
         const resReturned = await Post.updateMany({ status: 'returned' }, { status: 'resolved', resolvedAt: new Date() });
@@ -86,11 +99,13 @@ mongoose.connect(MONGO_URI)
     };
     migrateStatuses();
 
-    app.listen(PORT, () => console.log(`CampusFind server running on port ${PORT}`));
+    const httpServer = createServer(app);
+    attachSocketServer(httpServer, allowedOrigins);
+    httpServer.listen(PORT, () => console.log(`CampusFind server running on port ${PORT}`));
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err.message);
     process.exit(1);
   });
 
-module.exports = app;
+export default app;

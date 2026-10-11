@@ -1,4 +1,5 @@
-const cloudinary = require('cloudinary').v2;
+import cloudinaryPackage from 'cloudinary';
+const cloudinary = cloudinaryPackage.v2;
 
 const isConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -36,4 +37,4 @@ const uploadToCloudinary = async (filePath, folder = 'campusfind/posts') => {
   return result.secure_url;
 };
 
-module.exports = { uploadToCloudinary, isConfigured };
+export { uploadToCloudinary, isConfigured };

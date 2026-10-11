@@ -1,14 +1,19 @@
-const express = require('express');
+import express from 'express';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const router = express.Router();
-const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
-const Post = require('../models/Post');
-const User = require('../models/User');
-const Notification = require('../models/Notification');
-const { protect, verifiedOnly } = require('../middleware/auth');
-const { uploadToCloudinary } = require('../utils/cloudinary');
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+import crypto from 'crypto';
+import Post from '../models/Post.js';
+import User from '../models/User.js';
+import Notification from '../models/Notification.js';
+import { protect, verifiedOnly } from '../middleware/auth.js';
+import { uploadToCloudinary } from '../utils/cloudinary.js';
+import sendEmail from '../utils/sendEmail.js';
 
 // Store uploads temporarily on disk before sending them to Cloudinary.
 const tempDir = path.join(__dirname, '../public/temp');
@@ -519,7 +524,6 @@ router.post('/contact', async (req, res) => {
   }
 
   try {
-    const sendEmail = require('../utils/sendEmail');
     
     // Construct email content
     const emailSubject = `📩 CampusFind Contact Form: ${subject || 'General Inquiry'}`;
@@ -573,4 +577,4 @@ router.post('/contact', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

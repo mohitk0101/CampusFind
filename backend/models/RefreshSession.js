@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const refreshSessionSchema = new mongoose.Schema({
   userId: {
@@ -15,4 +15,4 @@ const refreshSessionSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { versionKey: false });
 
-module.exports = mongoose.model('RefreshSession', refreshSessionSchema);
+export default mongoose.model('RefreshSession', refreshSessionSchema);

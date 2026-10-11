@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const Message = require('../models/Message');
-const Post = require('../models/Post');
-const { protect, verifiedOnly } = require('../middleware/auth');
+import Message from '../models/Message.js';
+import Post from '../models/Post.js';
+import { protect, verifiedOnly } from '../middleware/auth.js';
+import { getIO } from '../utils/socket.js';
 
 // @GET /api/messages/conversations - Get all conversations for current user
 router.get('/conversations', protect, async (req, res) => {
@@ -94,6 +95,21 @@ router.post('/', protect, verifiedOnly, async (req, res) => {
     });
     await message.populate('sender', 'name profilePicture rollNumber');
     await message.populate('receiver', 'name profilePicture rollNumber');
+
+    // REST remains the authoritative write path; broadcast only after the message is persisted.
+    // Deliver to each participant's authenticated user room so delivery does not depend on
+    // both clients successfully joining the same conversation room.
+    const io = getIO();
+    if (io) {
+      io.to(`user:${String(req.user._id)}`)
+        .to(`user:${String(receiverId)}`)
+        .emit('message:new', message);
+
+      io.to(`user:${String(req.user._id)}`)
+        .to(`user:${String(receiverId)}`)
+        .emit('conversation:updated', { postId });
+    }
+
     res.status(201).json({ success: true, message });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -121,4 +137,4 @@ router.delete('/:postId/:userId', protect, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

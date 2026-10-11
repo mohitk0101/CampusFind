@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "NIT Kurukshetra Campus Lost & Found Platform",
   "main": "backend/server.js",
+  "type": "module",
   "scripts": {
     "start": "node backend/server.js",
     "dev:backend": "nodemon backend/server.js",
@@ -23,6 +24,7 @@
     "mongoose": "^8.3.4",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^9.0.1",
+    "socket.io": "^4.8.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

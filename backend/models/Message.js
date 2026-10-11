@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const messageSchema = new mongoose.Schema({
   post: {
@@ -35,4 +35,4 @@ const messageSchema = new mongoose.Schema({
 messageSchema.index({ post: 1, createdAt: 1 });             // Fetch thread messages in order
 messageSchema.index({ sender: 1, receiver: 1, post: 1 });   // Conversation pair lookup
 
-module.exports = mongoose.model('Message', messageSchema);
+export default mongoose.model('Message', messageSchema);

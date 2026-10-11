@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CF } from '../utils/api';
 import Topbar from '../components/Topbar';
 import Sidebar from '../components/Sidebar';
+import { createChatSocket } from '../utils/socket';
 
 export default function Chat() {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export default function Chat() {
 
   const messagesEndRef = useRef(null);
 
-  const pollRef = useRef(null);
+  const socketRef = useRef(null);
   const imageInputRef = useRef(null);
   const hasInitializedRef = useRef(false);
 
@@ -159,25 +160,63 @@ export default function Chat() {
   }, []);
 
 
-  // ─── Polling ──────────────────────────────────────────────────────────────
-  // Background polling for conversations list (updates sidebar in real-time)
+  // ─── Realtime chat via Socket.IO (no recurring message polling) ───────────
   useEffect(() => {
-    const convInterval = setInterval(loadConversations, 5000);
-    return () => clearInterval(convInterval);
+    if (!CF.isLoggedIn()) return;
+    const socket = createChatSocket();
+    socketRef.current = socket;
+
+    socket.on('conversation:updated', () => {
+      loadConversations();
+    });
+    socket.on('connect_error', (err) => {
+      console.warn('CampusFind realtime connection failed:', err.message);
+    });
+    socket.connect();
+
+    return () => {
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
+    };
   }, [loadConversations]);
 
-  // Polling for active conversation messages & post context
   useEffect(() => {
-    if (pollRef.current) clearInterval(pollRef.current);
-    if (!activeConv) return;
+    const socket = socketRef.current;
+    if (!socket || !activeConv?.postId || !activeConv?.userId) return;
 
-    pollRef.current = setInterval(async () => {
-      await loadMessages(activeConv);
-      await loadPostContext(activeConv.postId);
-    }, 3000);
+    const conversation = {
+      postId: activeConv.postId,
+      otherUserId: activeConv.userId,
+    };
+    const joinConversation = () => {
+  socket.emit('conversation:join', conversation, (result) => {
+    console.log('Conversation join result:', result);
+  });
+};
+    const handleNewMessage = (message) => {
+      const postId = String(message.post?._id || message.post || '');
+      const senderId = String(message.sender?._id || message.sender || '');
+      const receiverId = String(message.receiver?._id || message.receiver || '');
+      const belongsToActive = postId === String(activeConv.postId) &&
+        [senderId, receiverId].includes(String(userId)) &&
+        [senderId, receiverId].includes(String(activeConv.userId));
+      if (!belongsToActive) return;
+      setMessages((prev) => prev.some((item) => String(item._id) === String(message._id))
+        ? prev
+        : [...prev, message]);
+      scrollToBottom();
+    };
 
-    return () => clearInterval(pollRef.current);
-  }, [activeConv, loadMessages, loadPostContext]);
+    if (socket.connected) joinConversation();
+    socket.on('connect', joinConversation);
+    socket.on('message:new', handleNewMessage);
+    return () => {
+      socket.emit('conversation:leave', conversation);
+      socket.off('connect', joinConversation);
+      socket.off('message:new', handleNewMessage);
+    };
+  }, [activeConv, userId]);
 
 
   // ─── Send message ─────────────────────────────────────────────────────────
@@ -193,7 +232,9 @@ export default function Chat() {
         image: pendingImage || null,
       };
       const data = await CF.apiPost('/messages', body);
-      setMessages(prev => [...prev, data.message]);
+      setMessages(prev => prev.some(item => String(item._id) === String(data.message._id))
+        ? prev
+        : [...prev, data.message]);
       setText('');
       setPendingImage(null);
       scrollToBottom(true);

@@ -1,7 +1,7 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const User = require('./models/User');
-const Post = require('./models/Post');
+import 'dotenv/config';
+import mongoose from 'mongoose';
+import User from './models/User.js';
+import Post from './models/Post.js';
 
 // 1x1 transparent PNG as placeholder image (base64)
 const PLACEHOLDER_IMG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';

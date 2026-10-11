@@ -1,12 +1,12 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const { v4: uuidv4 } = require('uuid');
-const User = require('../models/User');
-const RefreshSession = require('../models/RefreshSession');
-const { protect } = require('../middleware/auth');
-const sendEmail = require('../utils/sendEmail');
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+import User from '../models/User.js';
+import RefreshSession from '../models/RefreshSession.js';
+import { protect } from '../middleware/auth.js';
+import sendEmail from '../utils/sendEmail.js';
 
 const ACCESS_COOKIE = 'cf_access';
 const REFRESH_COOKIE = 'cf_refresh';
@@ -39,12 +39,12 @@ function cookieOptions(path, maxAge) {
 }
 
 function setAuthCookies(res, accessToken, refreshToken, refreshMaxAge) {
-  res.cookie(ACCESS_COOKIE, accessToken, cookieOptions('/api', ACCESS_TTL_SECONDS * 1000));
+  res.cookie(ACCESS_COOKIE, accessToken, cookieOptions('/', ACCESS_TTL_SECONDS * 1000));
   res.cookie(REFRESH_COOKIE, refreshToken, cookieOptions('/api/auth', refreshMaxAge));
 }
 
 function clearAuthCookies(res) {
-  res.clearCookie(ACCESS_COOKIE, cookieOptions('/api', 0));
+  res.clearCookie(ACCESS_COOKIE, cookieOptions('/', 0));
   res.clearCookie(REFRESH_COOKIE, cookieOptions('/api/auth', 0));
 }
 
@@ -330,4 +330,4 @@ router.put('/change-password', protect, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

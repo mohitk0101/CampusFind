@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const CATEGORIES = ['Wallet', 'ID Card', 'Electronics', 'Calculator', 'Laptop Charger', 'Books', 'Earbuds', 'Keys', 'Water Bottle', 'Bag', 'Watch', 'Clothes', 'Sports Equipment', 'Bicycle', 'Documents', 'Others'];
 
@@ -112,5 +112,6 @@ postSchema.index({ status: 1, type: 1, category: 1 });    // Filter chips (Lost/
 postSchema.index({ reporter: 1, status: 1 });             // "My Items" user page
 postSchema.index({ status: 1, resolvedAt: -1 });          // Dashboard stats resolved queries
 
-module.exports = mongoose.model('Post', postSchema);
-module.exports.CATEGORIES = CATEGORIES;
+const Post = mongoose.model('Post', postSchema);
+export { CATEGORIES };
+export default Post;

@@ -19,4 +19,4 @@ function csrfProtection(req, res, next) {
   return res.status(403).json({ success: false, message: 'Request origin rejected.' });
 }
 
-module.exports = csrfProtection;
+export default csrfProtection;

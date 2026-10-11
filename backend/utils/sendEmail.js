@@ -1,4 +1,4 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
 
 /**
  * Sends transaction/notification emails using either:
@@ -120,4 +120,4 @@ const sendEmail = async (options) => {
   return false;
 };
 
-module.exports = sendEmail;
+export default sendEmail;
