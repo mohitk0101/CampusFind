@@ -60,59 +60,84 @@ export default function CreatePost() {
   }, [editId]);
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
+    const input = e.target;
+    const file = input.files?.[0];
     if (!file) return;
+    if (images.length >= 2) {
+      alert('You can upload a maximum of 2 images.');
+      input.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      input.value = '';
+      return;
+    }
     try {
-      const compressed = await CF.compressImage(file);
-      setImages((prev) => [...prev, compressed]);
+      const compressedFile = await CF.compressImage(file);
+      setImages((prev) => {
+        if (prev.length >= 2) return prev;
+        return [...prev, { file: compressedFile, preview: URL.createObjectURL(compressedFile) }];
+      });
       setCoverImageIndex(0);
-      e.target.value = '';
     } catch (err) {
-      alert('Error uploading image: ' + err.message);
+      alert('Error processing image: ' + err.message);
+    } finally {
+      input.value = '';
     }
   };
 
   const removeImage = (idx) => {
+    const image = images[idx];
+    if (image && typeof image === 'object' && image.preview) URL.revokeObjectURL(image.preview);
     setImages((prev) => prev.filter((_, i) => i !== idx));
-    if (coverImageIndex >= images.length - 1) {
-      setCoverImageIndex(0);
-    }
+    if (coverImageIndex >= images.length - 1) setCoverImageIndex(0);
+    else if (coverImageIndex > idx) setCoverImageIndex((prev) => prev - 1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!category) return alert('Please select a category.');
+    if (images.length < 1 || images.length > 2) return alert('Please upload between 1 and 2 images.');
     setIsLoading(true);
 
-    const body = {
-      type,
-      itemName,
-      category,
-      location,
-      date,
-      description,
-      images,
-      coverImageIndex,
-      questions: {
-        question1: q1,
-        question2: q2,
-        question3: q3
-      }
-    };
+    const formData = new FormData();
+    formData.append('type', type);
+    formData.append('itemName', itemName);
+    formData.append('category', category);
+    formData.append('location', location);
+    formData.append('date', date);
+    formData.append('description', description);
+    formData.append('coverImageIndex', String(coverImageIndex));
+    formData.append('questions', JSON.stringify({ question1: q1, question2: q2, question3: q3 }));
+
+    // Keep image order when existing Cloudinary URLs and newly selected files are mixed.
+    let newFileIndex = 0;
+    const imageOrder = images.map((image) => {
+      if (typeof image === 'string') return { type: 'existing', url: image };
+      formData.append('images', image.file, image.file.name);
+      return { type: 'new', index: newFileIndex++ };
+    });
+    formData.append('imageOrder', JSON.stringify(imageOrder));
 
     try {
       if (editId) {
-        await CF.apiPut(`/posts/${editId}`, body);
+        await CF.apiForm(`/posts/${editId}`, formData, 'PUT');
         alert('Post updated and resubmitted for approval!');
       } else {
-        await CF.apiPost('/posts', body);
+        await CF.apiForm('/posts', formData, 'POST');
         alert('Post submitted! Pending admin approval.');
       }
+      // Release local preview URLs for newly selected images.
+      images.forEach((image) => {
+        if (image && typeof image === 'object' && image.preview) URL.revokeObjectURL(image.preview);
+      });
       navigate('/');
     } catch (err) {
       alert(err.message);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -225,7 +250,7 @@ export default function CreatePost() {
                       key={idx} 
                       style={{ width: '80px', height: '80px', borderRadius: '8px', border: '1px solid var(--border)', position: 'relative', overflow: 'hidden' }}
                     >
-                      <img src={img} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={typeof img === 'string' ? img : img.preview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       <button 
                         type="button" 
                         onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
