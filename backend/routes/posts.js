@@ -1,10 +1,64 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
 const Post = require('../models/Post');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { protect, verifiedOnly } = require('../middleware/auth');
 const { uploadToCloudinary } = require('../utils/cloudinary');
+
+// Store uploads temporarily on disk before sending them to Cloudinary.
+const tempDir = path.join(__dirname, '../public/temp');
+fs.mkdirSync(tempDir, { recursive: true });
+
+const imageUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, tempDir),
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+      cb(null, `${crypto.randomBytes(16).toString('hex')}${ext}`);
+    }
+  }),
+  limits: { files: 2, fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith('image/')) return cb(null, true);
+    cb(new Error('Only image files are allowed.'));
+  }
+});
+
+const receivePostImages = (req, res, next) => {
+  imageUpload.array('images', 2)(req, res, (err) => {
+    if (!err) return next();
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'Each compressed image must be 5 MB or smaller.'
+      : err.code === 'LIMIT_FILE_COUNT'
+        ? 'Upload a maximum of 2 images.'
+        : err.message || 'Image upload failed.';
+    return res.status(400).json({ success: false, message });
+  });
+};
+
+const removeTempFiles = async (files = []) => {
+  await Promise.all(files.map((file) =>
+    fs.promises.unlink(file.path).catch((err) => {
+      if (err.code !== 'ENOENT') console.error('Temporary image cleanup failed:', err.message);
+    })
+  ));
+};
+
+const parseImageOrder = (value) => {
+  if (!value) return null;
+  const parsed = JSON.parse(value);
+  if (!Array.isArray(parsed) || parsed.length < 1 || parsed.length > 2) {
+    const error = new Error('Upload between 1 and 2 images.');
+    error.code = 'INVALID_IMAGE_ORDER';
+    throw error;
+  }
+  return parsed;
+};
 
 // @GET /api/posts - Get all approved posts with search and filter
 router.get('/', async (req, res) => {
@@ -161,36 +215,45 @@ router.get('/:id', async (req, res) => {
 });
 
 // @POST /api/posts - Create new post
-router.post('/', protect, verifiedOnly, async (req, res) => {
+router.post('/', protect, verifiedOnly, receivePostImages, async (req, res) => {
+  const files = req.files || [];
   try {
-    const { itemName, type, category, description, location, date, images, imageTypes, coverImageIndex, questions } = req.body;
+    const { itemName, type, category, description, location, date } = req.body;
+    const questions = JSON.parse(req.body.questions || '{}');
+    const imageOrder = parseImageOrder(req.body.imageOrder);
 
-    if (!images || images.length < 1 || images.length > 2) {
-      return res.status(400).json({ success: false, message: 'Upload between 1 and 2 images.' });
+    if (!imageOrder || imageOrder.length !== files.length || imageOrder.some((item, index) =>
+      item.type !== 'new' || item.index !== index
+    )) {
+      return res.status(400).json({ success: false, message: 'Please upload between 1 and 2 images.' });
     }
-    if (type === 'found' && imageTypes && imageTypes.some(t => t === 'reference')) {
-      return res.status(400).json({ success: false, message: 'Found posts can only have actual photos, not reference images.' });
+    const uploadedImages = [];
+    for (const file of files) {
+      uploadedImages.push(await uploadToCloudinary(file.path, 'campusfind/posts'));
     }
-
-    // Upload each image to Cloudinary CDN (falls back gracefully to Base64 if not configured)
-    const uploadedImages = await Promise.all(
-      images.map(img => uploadToCloudinary(img, 'campusfind/posts'))
-    );
 
     const post = await Post.create({
       itemName, type, category, description, location, date,
-      images: uploadedImages, imageTypes: imageTypes || [], coverImageIndex: coverImageIndex || 0,
-      reporter: req.user._id, questions
+      images: uploadedImages,
+      imageTypes: [],
+      coverImageIndex: Number.parseInt(req.body.coverImageIndex, 10) || 0,
+      reporter: req.user._id,
+      questions
     });
 
     res.status(201).json({ success: true, post, message: 'Post submitted for admin approval.' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    const status = err.code === 'CLOUDINARY_NOT_CONFIGURED' ? 503 :
+      (err.code === 'INVALID_IMAGE_ORDER' || err instanceof SyntaxError ? 400 : 500);
+    res.status(status).json({ success: false, message: status === 500 ? 'Could not create the post. Please try again.' : err.message });
+  } finally {
+    await removeTempFiles(files);
   }
 });
 
 // @PUT /api/posts/:id - Update post (only owner, only pending posts)
-router.put('/:id', protect, verifiedOnly, async (req, res) => {
+router.put('/:id', protect, verifiedOnly, receivePostImages, async (req, res) => {
+  const files = req.files || [];
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, message: 'Post not found.' });
@@ -201,16 +264,42 @@ router.put('/:id', protect, verifiedOnly, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Only pending or rejected posts can be edited.' });
     }
 
-    const allowed = ['itemName', 'category', 'description', 'location', 'date', 'imageTypes', 'coverImageIndex', 'questions'];
+    const allowed = ['itemName', 'category', 'description', 'location', 'date', 'coverImageIndex'];
     allowed.forEach(field => {
-      if (req.body[field] !== undefined) post[field] = req.body[field];
+      if (req.body[field] !== undefined) {
+        post[field] = field === 'coverImageIndex' ? (Number.parseInt(req.body[field], 10) || 0) : req.body[field];
+      }
     });
+    if (req.body.questions !== undefined) post.questions = JSON.parse(req.body.questions);
 
-    // If new images are provided, upload each to Cloudinary (skips URLs already hosted remotely)
-    if (req.body.images !== undefined) {
-      post.images = await Promise.all(
-        req.body.images.map(img => uploadToCloudinary(img, 'campusfind/posts'))
-      );
+    if (req.body.imageOrder !== undefined) {
+      const imageOrder = parseImageOrder(req.body.imageOrder);
+      if (!imageOrder || imageOrder.length !== files.length + imageOrder.filter(item => item.type === 'existing').length) {
+        return res.status(400).json({ success: false, message: 'Invalid image list.' });
+      }
+      const existingUrls = new Set(post.images || []);
+      for (const item of imageOrder) {
+        if (item.type === 'existing' && (!existingUrls.has(item.url) || typeof item.url !== 'string')) {
+          return res.status(400).json({ success: false, message: 'Invalid existing image reference.' });
+        }
+        if (item.type !== 'existing' && item.type !== 'new') {
+          return res.status(400).json({ success: false, message: 'Invalid image order.' });
+        }
+      }
+      const usedNewIndices = imageOrder.filter(item => item.type === 'new').map(item => item.index);
+      if (usedNewIndices.length !== files.length || usedNewIndices.some((idx, i) => idx !== i)) {
+        return res.status(400).json({ success: false, message: 'Invalid uploaded image order.' });
+      }
+      const uploadedNewImages = [];
+      for (const file of files) {
+        uploadedNewImages.push(await uploadToCloudinary(file.path, 'campusfind/posts'));
+      }
+      post.images = imageOrder.map(item => item.type === 'existing' ? item.url : uploadedNewImages[item.index]);
+      if (post.images.length < 1 || post.images.length > 2) {
+        return res.status(400).json({ success: false, message: 'Upload between 1 and 2 images.' });
+      }
+    } else if (files.length) {
+      return res.status(400).json({ success: false, message: 'Image order metadata is missing.' });
     }
 
     post.status = 'pending'; // Reset to pending on edit
@@ -219,7 +308,11 @@ router.put('/:id', protect, verifiedOnly, async (req, res) => {
 
     res.json({ success: true, post, message: 'Post updated and resubmitted for approval.' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    const status = err.code === 'CLOUDINARY_NOT_CONFIGURED' ? 503 :
+      (err.code === 'INVALID_IMAGE_ORDER' || err instanceof SyntaxError ? 400 : 500);
+    res.status(status).json({ success: false, message: status === 500 ? 'Could not update the post. Please try again.' : err.message });
+  } finally {
+    await removeTempFiles(files);
   }
 });
 

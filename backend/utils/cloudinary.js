@@ -1,6 +1,5 @@
 const cloudinary = require('cloudinary').v2;
 
-// Check if Cloudinary environment variables are set
 const isConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
   process.env.CLOUDINARY_API_KEY &&
@@ -16,47 +15,25 @@ if (isConfigured) {
   });
   console.log('☁️ [CLOUDINARY] Cloudinary initialized successfully');
 } else {
-  console.log('ℹ️ [CLOUDINARY] Environment variables not set. Falling back to inline image storage.');
+  console.warn('⚠️ [CLOUDINARY] Credentials are missing. Image uploads will fail until configured.');
 }
 
-/**
- * Uploads a base64 image or URL to Cloudinary.
- * If already a remote URL or if Cloudinary is not configured, returns the input as-is.
- * 
- * @param {string} fileData - Base64 data string or existing URL
- * @param {string} folder - Target Cloudinary folder
- * @returns {Promise<string>} - HTTPS secure URL from Cloudinary or fallback string
- */
-const uploadToCloudinary = async (fileData, folder = 'campusfind/posts') => {
-  if (!fileData) return null;
-
-  // Already hosted on a remote server/CDN
-  if (fileData.startsWith('http://') || fileData.startsWith('https://')) {
-    return fileData;
-  }
-
-  // If Cloudinary is not configured, gracefully fallback to storing the string
+/** Upload a local temporary image file and return its Cloudinary HTTPS URL. */
+const uploadToCloudinary = async (filePath, folder = 'campusfind/posts') => {
   if (!isConfigured) {
-    return fileData;
+    const error = new Error('Image uploads are unavailable because Cloudinary is not configured.');
+    error.code = 'CLOUDINARY_NOT_CONFIGURED';
+    throw error;
   }
 
-  try {
-    const result = await cloudinary.uploader.upload(fileData, {
-      folder,
-      resource_type: 'auto',
-      transformation: [
-        { quality: 'auto', fetch_format: 'auto' } // Cloudinary automatic format & compression
-      ]
-    });
-    return result.secure_url;
-  } catch (error) {
-    console.error('❌ [CLOUDINARY ERROR] Upload failed:', error.message);
-    // Fallback gracefully so post creation doesn't fail if Cloudinary has a temporary network glitch
-    return fileData;
-  }
+  const result = await cloudinary.uploader.upload(filePath, {
+    folder,
+    resource_type: 'image',
+    transformation: [{ quality: 'auto', fetch_format: 'auto' }]
+  });
+
+  if (!result.secure_url) throw new Error('Cloudinary did not return a secure image URL.');
+  return result.secure_url;
 };
 
-module.exports = {
-  uploadToCloudinary,
-  isConfigured
-};
+module.exports = { uploadToCloudinary, isConfigured };
