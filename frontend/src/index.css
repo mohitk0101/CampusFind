@@ -3500,3 +3500,49 @@ body.dark-theme .my-items-tab.active { color: var(--primary-light) !important; b
   .dashboard-search-row input { font-size: 11px !important; }
   .dashboard-search-row > button[type="submit"] { padding-inline: 10px !important; }
 }
+
+
+/* Mobile chat keyboard fix: preserve the existing design and keep the composer
+   immediately above the bottom navigation while the keyboard is open. */
+@media (max-width: 620px) {
+  .cf-mobile-nav {
+    bottom: var(--cf-keyboard-height, 0px) !important;
+    transition: none !important;
+  }
+
+  .chat-layout.has-active-conv {
+    height: calc(var(--cf-visible-height, 100dvh) - var(--navbar-height) - 78px) !important;
+    max-height: calc(var(--cf-visible-height, 100dvh) - var(--navbar-height) - 78px) !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chat-layout.has-active-conv .chat-area {
+    min-height: 0 !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .chat-layout.has-active-conv .messages-area {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat-layout.has-active-conv .chat-input-area {
+    flex: 0 0 auto !important;
+    position: relative !important;
+    z-index: 1101;
+    margin: 0 !important;
+    padding: 7px !important;
+    padding-bottom: max(7px, env(safe-area-inset-bottom)) !important;
+    background: var(--bg-card, #fff);
+  }
+
+  .chat-layout.has-active-conv .chat-input-area input {
+    min-width: 0 !important;
+  }
+}

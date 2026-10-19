@@ -34,6 +34,37 @@ export default function Chat() {
   const messageInputRef = useRef(null);
   const hasInitializedRef = useRef(false);
 
+  // Keep the mobile chat composer and bottom navigation above the on-screen keyboard.
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.innerWidth > 620) return;
+
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+
+    const updateViewport = () => {
+      const visibleHeight = viewport?.height || window.innerHeight;
+      const keyboardHeight = viewport
+        ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+        : 0;
+
+      root.style.setProperty('--cf-visible-height', `${visibleHeight}px`);
+      root.style.setProperty('--cf-keyboard-height', `${keyboardHeight}px`);
+    };
+
+    updateViewport();
+    viewport?.addEventListener('resize', updateViewport);
+    viewport?.addEventListener('scroll', updateViewport);
+    window.addEventListener('resize', updateViewport);
+
+    return () => {
+      viewport?.removeEventListener('resize', updateViewport);
+      viewport?.removeEventListener('scroll', updateViewport);
+      window.removeEventListener('resize', updateViewport);
+      root.style.removeProperty('--cf-visible-height');
+      root.style.removeProperty('--cf-keyboard-height');
+    };
+  }, []);
+
   // ─── Scroll to bottom ────────────────────────────────────────────────────
   const scrollToBottom = (force = false) => {
     setTimeout(() => {
