@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const buildQuery = (pageNo = 1, append = false) => {
     const params = new URLSearchParams();
@@ -183,15 +184,16 @@ export default function Dashboard() {
   return <div className="dashboard-shell">
     <Topbar/>
     <div className="dashboard-layout">
-      <aside className="dashboard-filter-sidebar">
-        <div className="filter-sidebar-title"><Icon name="filter"/><h2>Refine results</h2></div>
+      {mobileFiltersOpen && <button type="button" className="filter-backdrop" aria-label="Close filters" onClick={() => setMobileFiltersOpen(false)} />}
+      <aside className={`dashboard-filter-sidebar ${mobileFiltersOpen ? 'filters-open' : ''}`}>
+        <div className="filter-sidebar-title"><Icon name="filter"/><h2>Refine results</h2><button type="button" className="mobile-filter-close" aria-label="Close filters" onClick={() => setMobileFiltersOpen(false)}>×</button></div>
         <div className="filter-group"><h3>Status</h3>{filterLabels.map(item => <button key={item.value || 'all'} className={`filter-sidebar-option ${type === item.value ? 'active' : ''}`} onClick={() => setType(item.value)}><span>{item.label}</span><small>{item.count}</small></button>)}</div>
         <div className="filter-group"><h3>Category</h3><button className={`filter-sidebar-option ${!category ? 'active' : ''}`} onClick={() => setCategory('')}><span>All categories</span><small>{statsValues.total}</small></button>{CF.CATEGORIES.map(item => <button key={item} className={`filter-sidebar-option ${category === item ? 'active' : ''}`} onClick={() => setCategory(category === item ? '' : item)}><span>{item}</span></button>)}</div>
         <div className="filter-group"><h3>Date reported</h3><select className="filter-sidebar-select" value={dateRange} onChange={e => setDateRange(e.target.value)}><option value="">Any date</option><option value="today">Today</option><option value="week">This week</option><option value="month">This month</option></select></div>
         <button className="filter-reset" onClick={() => { setType(''); setCategory(''); setDateRange(''); setSort('newest'); setQuery(''); setQueryInput(''); }}>Clear all filters</button>
       </aside>
       <main className="dashboard-main" id="reported-items">
-        <div className="dashboard-heading-row"><div><p className="public-eyebrow">CAMPUS COMMUNITY</p><h1>Browse Items</h1><p>Find lost belongings around campus</p></div><label className="sort-control"><span>Sort by</span><select value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label></div>
+        <div className="dashboard-heading-row"><div><p className="public-eyebrow">CAMPUS COMMUNITY</p><h1>Browse Items</h1><p>Find lost belongings around campus</p></div><div className="dashboard-heading-actions"><label className="sort-control"><span>Sort by</span><select value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label><button type="button" className="dashboard-filter-toggle" onClick={() => setMobileFiltersOpen(true)} aria-expanded={mobileFiltersOpen}><Icon name="filter" size={16}/> Filter</button></div></div>
         <form className="dashboard-search-row" onSubmit={submitSearch}><Icon name="search" size={21}/><input value={queryInput} onChange={e => setQueryInput(e.target.value)} placeholder="Search for items (e.g. laptop, keys, bottle, book...)" aria-label="Search items"/><button type="submit">Search</button></form>
         <div className="dashboard-tabs">{filterLabels.map(item => <button key={item.value || 'all'} className={type === item.value ? 'active' : ''} onClick={() => setType(item.value)}>{item.label}</button>)}</div>
         <div className="dashboard-results-line"><span><strong>{totalPosts}</strong> items found</span><button onClick={() => load(1, false, true)}>Refresh results</button></div>

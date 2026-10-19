@@ -31,6 +31,7 @@ export default function Chat() {
 
   const socketRef = useRef(null);
   const imageInputRef = useRef(null);
+  const messageInputRef = useRef(null);
   const hasInitializedRef = useRef(false);
 
   // ─── Scroll to bottom ────────────────────────────────────────────────────
@@ -63,8 +64,8 @@ export default function Chat() {
       setMessages(data.messages || []);
       // The API marks incoming messages as read when this thread is fetched.
       // Refresh the conversation list so its unread badge clears immediately.
+      // Do not force-scroll on conversation open: let the user choose their position.
       await loadConversations();
-      scrollToBottom();
     } catch (e) {
       console.error(e);
     }
@@ -241,6 +242,11 @@ export default function Chat() {
         : [...prev, data.message]);
       setText('');
       setPendingImage(null);
+      // Keep the composer focused so mobile users can send another message
+      // without reopening the keyboard. The input stays enabled while sending.
+      requestAnimationFrame(() => {
+        messageInputRef.current?.focus({ preventScroll: true });
+      });
       scrollToBottom(true);
       loadConversations();
     } catch (err) {
@@ -388,7 +394,7 @@ export default function Chat() {
       <div className="main-content">
         <Topbar title="Messages" onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className={`chat-layout ${activeConv ? 'has-active-conv' : ''}`}>
+        <div className={`chat-layout ${activeConv ? 'has-active-conv' : ''}`} style={{ height: 'calc(100vh - var(--navbar-height))' }}>
 
           {/* ── Conversations List ─────────────────────────────────────────── */}
           <div className="conversations-list">
@@ -555,11 +561,11 @@ export default function Chat() {
                   />
                   <input
                     type="text"
+                    ref={messageInputRef}
                     placeholder={pendingImage ? 'Image attached — add a caption or just Send' : 'Type a message...'}
                     value={text}
                     onChange={e => setText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); } }}
-                    disabled={isSending}
                     autoComplete="off"
                   />
                   <button type="submit" className="btn btn-primary" disabled={isSending || (!text.trim() && !pendingImage)}>
