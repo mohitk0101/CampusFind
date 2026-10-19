@@ -197,25 +197,98 @@ export default function Chat() {
 
 
   // ─── Realtime chat via Socket.IO (no recurring message polling) ───────────
+ 
+  // Realtime chat + automatic fallback polling
   useEffect(() => {
-    if (!CF.isLoggedIn()) return;
-    const socket = createChatSocket();
-    socketRef.current = socket;
+    if (!activeConv?.postId || !activeConv?.userId) return;
 
-    socket.on('conversation:updated', () => {
+    let active = true;
+    const socket = socketRef.current;
+
+    const conversation = {
+      postId: activeConv.postId,
+      otherUserId: activeConv.userId,
+    };
+
+    // Fetch messages so the receiver updates even if Socket.IO fails.
+    const syncMessages = async () => {
+      try {
+        const data = await CF.apiGet(
+          `/messages/${activeConv.postId}/${activeConv.userId}`
+        );
+
+        if (!active) return;
+
+        setMessages(data.messages || []);
+      } catch (err) {
+        console.error("Could not sync chat messages:", err);
+      }
+    };
+
+    const handleNewMessage = (message) => {
+      const postId = String(message.post?._id || message.post || "");
+      const senderId = String(message.sender?._id || message.sender || "");
+      const receiverId = String(
+        message.receiver?._id || message.receiver || ""
+      );
+
+      const participants = [senderId, receiverId];
+
+      const belongsToActive =
+        postId === String(activeConv.postId) &&
+        participants.includes(String(userId)) &&
+        participants.includes(String(activeConv.userId));
+
+      if (!belongsToActive) return;
+
+      setMessages((prev) => {
+        if (prev.some((item) => String(item._id) === String(message._id))) {
+          return prev;
+        }
+
+        return [...prev, message];
+      });
+
+      scrollToBottom();
       loadConversations();
-    });
-    socket.on('connect_error', (err) => {
-      console.warn('CampusFind realtime connection failed:', err.message);
-    });
-    socket.connect();
+    };
+
+    const joinConversation = () => {
+      socket?.emit("conversation:join", conversation, (result) => {
+        if (!result?.success) {
+          console.warn("Could not join chat:", result?.message);
+        }
+      });
+    };
+
+    if (socket) {
+      if (socket.connected) joinConversation();
+
+      socket.on("connect", joinConversation);
+      socket.on("message:new", handleNewMessage);
+    }
+
+    // Sync immediately, then check for new messages every 2.5 seconds.
+    syncMessages();
+
+    const messageTimer = setInterval(syncMessages, 2500);
+    const conversationTimer = setInterval(() => {
+      if (active) loadConversations();
+    }, 5000);
 
     return () => {
-      socket.removeAllListeners();
-      socket.disconnect();
-      socketRef.current = null;
+      active = false;
+      clearInterval(messageTimer);
+      clearInterval(conversationTimer);
+
+      if (socket) {
+        socket.emit("conversation:leave", conversation);
+        socket.off("connect", joinConversation);
+        socket.off("message:new", handleNewMessage);
+      }
     };
-  }, [loadConversations]);
+  }, [activeConv, userId, loadConversations]);
+
 
   useEffect(() => {
     const socket = socketRef.current;
