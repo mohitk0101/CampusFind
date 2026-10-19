@@ -3502,47 +3502,106 @@ body.dark-theme .my-items-tab.active { color: var(--primary-light) !important; b
 }
 
 
-/* Mobile chat keyboard fix: preserve the existing design and keep the composer
-   immediately above the bottom navigation while the keyboard is open. */
-@media (max-width: 620px) {
-  .cf-mobile-nav {
-    bottom: var(--cf-keyboard-height, 0px) !important;
-    transition: none !important;
+/* WhatsApp-like mobile chat anchoring: only the messages pane scrolls. */
+@media (max-width: 760px) {
+  .chat-layout.has-active-conv {
+    position: fixed !important;
+    top: var(--cf-chat-top, 62px) !important;
+    right: 0 !important;
+    bottom: var(--cf-chat-bottom, calc(66px + env(safe-area-inset-bottom, 0px))) !important;
+    left: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border-radius: 0 !important;
+    z-index: 1050;
+    box-sizing: border-box !important;
   }
 
-  .chat-layout.has-active-conv {
-    height: calc(var(--cf-visible-height, 100dvh) - var(--navbar-height) - 78px) !important;
-    max-height: calc(var(--cf-visible-height, 100dvh) - var(--navbar-height) - 78px) !important;
-    min-height: 0 !important;
-    overflow: hidden !important;
+  .chat-layout.has-active-conv .conversations-list {
+    display: none !important;
   }
 
   .chat-layout.has-active-conv .chat-area {
-    min-height: 0 !important;
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    width: 100% !important;
     height: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
     overflow: hidden !important;
+  }
+
+  .chat-layout.has-active-conv .chat-header {
+    flex: 0 0 auto !important;
+    min-height: 58px !important;
+    padding: 8px 10px !important;
   }
 
   .chat-layout.has-active-conv .messages-area {
     flex: 1 1 0 !important;
+    height: 0 !important;
     min-height: 0 !important;
-    overflow-y: auto !important;
     overflow-x: hidden !important;
+    overflow-y: auto !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    padding: 12px 10px !important;
   }
 
   .chat-layout.has-active-conv .chat-input-area {
-    flex: 0 0 auto !important;
     position: relative !important;
-    z-index: 1101;
+    z-index: 2;
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    gap: 8px !important;
     margin: 0 !important;
-    padding: 7px !important;
-    padding-bottom: max(7px, env(safe-area-inset-bottom)) !important;
-    background: var(--bg-card, #fff);
+    padding: 8px 10px max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid var(--border) !important;
+    background: var(--bg-card, #fff) !important;
   }
 
-  .chat-layout.has-active-conv .chat-input-area input {
+  .chat-layout.has-active-conv .chat-input-area input[type="text"] {
+    flex: 1 1 auto !important;
+    width: 0 !important;
     min-width: 0 !important;
+    min-height: 44px;
+    margin: 0 !important;
+    padding: 10px 14px !important;
+    font-size: 16px !important;
+    border-radius: 24px !important;
+  }
+
+  .chat-layout.has-active-conv .chat-input-area .attachment-btn {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    max-width: 44px !important;
+    border-radius: 14px !important;
+  }
+
+  .chat-layout.has-active-conv .chat-input-area button.btn-primary {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 64px !important;
+    max-width: none !important;
+    min-height: 44px !important;
+    padding: 10px 14px !important;
+    border-radius: 14px !important;
+    white-space: nowrap;
+  }
+
+  /* WhatsApp-style: when typing, let the composer sit just above the keyboard. */
+  body.chat-keyboard-open .cf-mobile-nav {
+    display: none !important;
   }
 }

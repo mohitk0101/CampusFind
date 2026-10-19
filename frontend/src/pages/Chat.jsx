@@ -34,36 +34,51 @@ export default function Chat() {
   const messageInputRef = useRef(null);
   const hasInitializedRef = useRef(false);
 
-  // Keep the mobile chat composer and bottom navigation above the on-screen keyboard.
+  // Keep the mobile chat panel pinned between the app header and the keyboard/nav.
+  // The visual viewport changes when the on-screen keyboard opens on mobile browsers.
   useEffect(() => {
-    if (typeof window === 'undefined' || window.innerWidth > 620) return;
+    if (!activeConv || !window.matchMedia('(max-width: 760px)').matches) return;
 
     const root = document.documentElement;
+    const body = document.body;
     const viewport = window.visualViewport;
 
-    const updateViewport = () => {
-      const visibleHeight = viewport?.height || window.innerHeight;
+    const updateMobileChatViewport = () => {
+      if (!window.matchMedia('(max-width: 760px)').matches) {
+        body.classList.remove('chat-keyboard-open');
+        root.style.removeProperty('--cf-chat-bottom');
+        return;
+      }
+
+      // On Android Chrome, innerHeight usually stays at the full page height while
+      // visualViewport.height shrinks to the area above the keyboard.
       const keyboardHeight = viewport
         ? Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
         : 0;
+      const keyboardOpen = keyboardHeight > 120;
 
-      root.style.setProperty('--cf-visible-height', `${visibleHeight}px`);
-      root.style.setProperty('--cf-keyboard-height', `${keyboardHeight}px`);
+      body.classList.toggle('chat-keyboard-open', keyboardOpen);
+      root.style.setProperty(
+        '--cf-chat-bottom',
+        keyboardOpen
+          ? `${Math.round(keyboardHeight)}px`
+          : 'calc(66px + env(safe-area-inset-bottom, 0px))'
+      );
     };
 
-    updateViewport();
-    viewport?.addEventListener('resize', updateViewport);
-    viewport?.addEventListener('scroll', updateViewport);
-    window.addEventListener('resize', updateViewport);
+    updateMobileChatViewport();
+    window.addEventListener('resize', updateMobileChatViewport);
+    viewport?.addEventListener('resize', updateMobileChatViewport);
+    viewport?.addEventListener('scroll', updateMobileChatViewport);
 
     return () => {
-      viewport?.removeEventListener('resize', updateViewport);
-      viewport?.removeEventListener('scroll', updateViewport);
-      window.removeEventListener('resize', updateViewport);
-      root.style.removeProperty('--cf-visible-height');
-      root.style.removeProperty('--cf-keyboard-height');
+      window.removeEventListener('resize', updateMobileChatViewport);
+      viewport?.removeEventListener('resize', updateMobileChatViewport);
+      viewport?.removeEventListener('scroll', updateMobileChatViewport);
+      body.classList.remove('chat-keyboard-open');
+      root.style.removeProperty('--cf-chat-bottom');
     };
-  }, []);
+  }, [activeConv]);
 
   // ─── Scroll to bottom ────────────────────────────────────────────────────
   const scrollToBottom = (force = false) => {
@@ -197,98 +212,25 @@ export default function Chat() {
 
 
   // ─── Realtime chat via Socket.IO (no recurring message polling) ───────────
- 
-  // Realtime chat + automatic fallback polling
   useEffect(() => {
-    if (!activeConv?.postId || !activeConv?.userId) return;
+    if (!CF.isLoggedIn()) return;
+    const socket = createChatSocket();
+    socketRef.current = socket;
 
-    let active = true;
-    const socket = socketRef.current;
-
-    const conversation = {
-      postId: activeConv.postId,
-      otherUserId: activeConv.userId,
-    };
-
-    // Fetch messages so the receiver updates even if Socket.IO fails.
-    const syncMessages = async () => {
-      try {
-        const data = await CF.apiGet(
-          `/messages/${activeConv.postId}/${activeConv.userId}`
-        );
-
-        if (!active) return;
-
-        setMessages(data.messages || []);
-      } catch (err) {
-        console.error("Could not sync chat messages:", err);
-      }
-    };
-
-    const handleNewMessage = (message) => {
-      const postId = String(message.post?._id || message.post || "");
-      const senderId = String(message.sender?._id || message.sender || "");
-      const receiverId = String(
-        message.receiver?._id || message.receiver || ""
-      );
-
-      const participants = [senderId, receiverId];
-
-      const belongsToActive =
-        postId === String(activeConv.postId) &&
-        participants.includes(String(userId)) &&
-        participants.includes(String(activeConv.userId));
-
-      if (!belongsToActive) return;
-
-      setMessages((prev) => {
-        if (prev.some((item) => String(item._id) === String(message._id))) {
-          return prev;
-        }
-
-        return [...prev, message];
-      });
-
-      scrollToBottom();
+    socket.on('conversation:updated', () => {
       loadConversations();
-    };
-
-    const joinConversation = () => {
-      socket?.emit("conversation:join", conversation, (result) => {
-        if (!result?.success) {
-          console.warn("Could not join chat:", result?.message);
-        }
-      });
-    };
-
-    if (socket) {
-      if (socket.connected) joinConversation();
-
-      socket.on("connect", joinConversation);
-      socket.on("message:new", handleNewMessage);
-    }
-
-    // Sync immediately, then check for new messages every 2.5 seconds.
-    syncMessages();
-
-    const messageTimer = setInterval(syncMessages, 2500);
-    const conversationTimer = setInterval(() => {
-      if (active) loadConversations();
-    }, 5000);
+    });
+    socket.on('connect_error', (err) => {
+      console.warn('CampusFind realtime connection failed:', err.message);
+    });
+    socket.connect();
 
     return () => {
-      active = false;
-      clearInterval(messageTimer);
-      clearInterval(conversationTimer);
-
-      if (socket) {
-        socket.emit("conversation:leave", conversation);
-        socket.off("connect", joinConversation);
-        socket.off("message:new", handleNewMessage);
-      }
+      socket.removeAllListeners();
+      socket.disconnect();
+      socketRef.current = null;
     };
-  }, [activeConv, userId, loadConversations]);
-
+  }, [loadConversations]);
 
   useEffect(() => {
     const socket = socketRef.current;
