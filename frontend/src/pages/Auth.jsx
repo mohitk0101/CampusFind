@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CF } from '../utils/api';
 import { useAppContext } from '../context/AppContext';
 
 export default function Auth() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { loginUser } = useAppContext();
+  const nextPath = searchParams.get('next');
+  const getPostLoginPath = (role) => nextPath && nextPath.startsWith('/') && !nextPath.startsWith('//') ? nextPath : (role === 'admin' ? '/admin' : '/');
   const [tab, setTab] = useState('login');
   
   const [email, setEmail] = useState('');
@@ -27,7 +30,7 @@ export default function Auth() {
       const data = await CF.apiPost('/auth/login', { email, password });
       loginUser(data.user);
       setIsLoading(false);
-      navigate(data.user.role === 'admin' ? '/admin' : '/');
+      navigate(getPostLoginPath(data.user.role));
     } catch (err) {
       alert(err.message);
       setIsLoading(false);
@@ -61,7 +64,7 @@ export default function Auth() {
 
       <div className="auth-container">
         <div className="auth-header">
-          <div className="auth-logo">🔍</div>
+          <div className="auth-logo" aria-hidden="true">🔍</div>
           <h1 className="auth-title">CampusFind</h1>
           <p className="auth-subtitle">NIT Kurukshetra Lost & Found Platform</p>
         </div>
@@ -91,7 +94,7 @@ export default function Auth() {
                 <input 
                   type="email" 
                   className="form-control" 
-                  placeholder="124102101@nitkkr.ac.in" 
+                  placeholder="yourname@nitkkr.ac.in" 
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -113,7 +116,7 @@ export default function Auth() {
                     onClick={() => setShowLoginPass(!showLoginPass)} 
                     style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', userSelect: 'none', fontSize: '16px' }}
                   >
-                    {showLoginPass ? '🙈' : '👁️'}
+                    {showLoginPass ? 'Hide' : 'Show'}
                   </span>
                 </div>
               </div>
@@ -136,7 +139,7 @@ export default function Auth() {
                   <input 
                     type="text" 
                     className="form-control" 
-                    placeholder="Mohit Kumar" 
+                    placeholder="Enter your full name" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -182,7 +185,7 @@ export default function Auth() {
                     onClick={() => setShowSignupPass(!showSignupPass)} 
                     style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', userSelect: 'none', fontSize: '16px' }}
                   >
-                    {showSignupPass ? '🙈' : '👁️'}
+                    {showSignupPass ? 'Hide' : 'Show'}
                   </span>
                 </div>
               </div>
@@ -202,7 +205,7 @@ export default function Auth() {
                     onClick={() => setShowSignupConfirm(!showSignupConfirm)} 
                     style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', userSelect: 'none', fontSize: '16px' }}
                   >
-                    {showSignupConfirm ? '🙈' : '👁️'}
+                    {showSignupConfirm ? 'Hide' : 'Show'}
                   </span>
                 </div>
               </div>

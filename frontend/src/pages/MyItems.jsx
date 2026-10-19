@@ -1,130 +1,71 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CF } from '../utils/api';
 import Topbar from '../components/Topbar';
-import Sidebar from '../components/Sidebar';
+import PostCard from '../components/PostCard';
+
+const TABS = [
+  { key: 'all', label: 'All Items' },
+  { key: 'lost', label: 'Lost' },
+  { key: 'found', label: 'Found' },
+  { key: 'resolved', label: 'Resolved' },
+  { key: 'archived', label: 'Archived' },
+];
 
 export default function MyItems() {
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [posts, setPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('lost');
-
-  const loadMyPosts = async () => {
-    setIsLoading(true);
-    try {
-      const data = await CF.apiGet('/posts/my');
-      setPosts(data.posts || []);
-    } catch (e) {
-      alert('Error loading your items: ' + e.message);
-    }
-    setIsLoading(false);
-  };
+  const [activeTab, setActiveTab] = useState('all');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('newest');
 
   useEffect(() => {
     if (!CF.isLoggedIn()) {
-      navigate('/auth');
+      navigate(`/auth?next=${encodeURIComponent('/my-items')}`);
       return;
     }
+    let active = true;
+    const loadMyPosts = async () => {
+      setIsLoading(true);
+      try {
+        const data = await CF.apiGet('/posts/my');
+        if (active) setPosts(data.posts || []);
+      } catch (error) {
+        if (active) window.alert(`Error loading your items: ${error.message}`);
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    };
     loadMyPosts();
-  }, []);
+    return () => { active = false; };
+  }, [navigate]);
 
-  const getFilteredPosts = () => {
-    return posts.filter(post => {
-      if (activeTab === 'lost') return post.type === 'lost' && ['active', 'pending', 'rejected'].includes(post.status);
-      if (activeTab === 'found') return post.type === 'found' && ['active', 'pending', 'rejected'].includes(post.status);
-      if (activeTab === 'resolved') return post.status === 'resolved';
-      if (activeTab === 'archived') return post.status === 'archived';
-      return false;
-    });
-  };
+  const filtered = useMemo(() => posts.filter(post => {
+    if (activeTab === 'lost' && post.type !== 'lost') return false;
+    if (activeTab === 'found' && post.type !== 'found') return false;
+    if (activeTab === 'resolved' && post.status !== 'resolved') return false;
+    if (activeTab === 'archived' && post.status !== 'archived') return false;
+    if (activeTab === 'all' && post.status === 'archived') return false;
+    const term = search.trim().toLowerCase();
+    if (term && ![post.itemName, post.location, post.category, post.description].some(value => String(value || '').toLowerCase().includes(term))) return false;
+    return true;
+  }).sort((a, b) => sort === 'oldest' ? new Date(a.createdAt) - new Date(b.createdAt) : new Date(b.createdAt) - new Date(a.createdAt)), [posts, activeTab, search, sort]);
 
-  const filtered = getFilteredPosts();
+  const countFor = (key) => posts.filter(post => {
+    if (key === 'all') return post.status !== 'archived';
+    if (key === 'lost') return post.type === 'lost' && post.status !== 'archived';
+    if (key === 'found') return post.type === 'found' && post.status !== 'archived';
+    return post.status === key;
+  }).length;
 
-  const getStatusBadgeClass = (status) => {
-    if (status === 'active') return 'badge-active';
-    if (status === 'pending') return 'badge-pending';
-    if (status === 'resolved') return 'badge-resolved';
-    if (status === 'archived') return 'badge-archived';
-    return 'badge-rejected';
-  };
-
-  return (
-    <>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="main-content">
-        <Topbar title="My Items" onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-        
-        <div className="page-body" style={{ maxWidth: '960px' }}>
-          <div className="my-items-tabs" style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '24px', gap: '24px' }}>
-            {['lost', 'found', 'resolved', 'archived'].map((tab) => (
-              <div 
-                key={tab}
-                className={`my-items-tab ${activeTab === tab ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab)}
-                style={{ 
-                  padding: '12px 4px', 
-                  cursor: 'pointer', 
-                  fontWeight: 600, 
-                  fontSize: '14px',
-                  color: activeTab === tab ? 'var(--primary)' : 'var(--text-muted)',
-                  borderBottom: activeTab === tab ? '2px solid var(--primary)' : '2px solid transparent',
-                  textTransform: 'capitalize'
-                }}
-              >
-                {tab} Items
-              </div>
-            ))}
-          </div>
-
-          <div>
-            {isLoading ? (
-              <div className="spinner" />
-            ) : filtered.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">📦</div>
-                <div className="empty-title">No items found</div>
-                <div className="empty-text">You haven't reported any items in this category.</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {filtered.map((post) => {
-                  const img = post.images && post.images.length > 0 ? post.images[post.coverImageIndex || 0] : null;
-                  return (
-                    <div 
-                      key={post._id}
-                      className="my-item-row"
-                      onClick={() => navigate(`/post-detail?id=${post._id}`)}
-                    >
-                      <div className="my-item-avatar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-base)' }}>
-                        {img ? (
-                          <img src={img} alt="thumbnail" />
-                        ) : (
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-                        )}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="my-item-title">{post.itemName}</div>
-                        <div className="my-item-meta">
-                          {post.location} • {CF.formatDate(post.date)}
-                        </div>
-                      </div>
-                      <span className={`my-item-badge ${getStatusBadgeClass(post.status)}`}>
-                        {post.status}
-                      </span>
-                      <div className="my-item-chevron" style={{ display: 'flex', alignItems: 'center' }}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-        </div>
-      </div>
-    </>
-  );
+  return <div className="my-items-page">
+    <Topbar/>
+    <main className="page-body my-items-content">
+      <div className="page-intro-row"><div><p className="public-eyebrow">YOUR CAMPUS ACTIVITY</p><h1>My Items</h1><p>Manage the items you have reported.</p></div><button className="my-items-report-button" onClick={() => navigate('/create-post')}>＋ Report Item</button></div>
+      <div className="my-items-tabs">{TABS.map(tab => <button key={tab.key} className={`my-items-tab ${activeTab === tab.key ? 'active' : ''}`} onClick={() => setActiveTab(tab.key)}>{tab.label}<span>{countFor(tab.key)}</span></button>)}</div>
+      <div className="my-items-toolbar"><label className="my-items-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search your items..." aria-label="Search your items"/></label><label className="my-items-sort"><span>Sort</span><select value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label></div>
+      {isLoading ? <div className="spinner"/> : filtered.length === 0 ? <div className="empty-state my-items-empty"><div className="empty-title">No items found</div><div className="empty-text">There are no reports in this section yet.</div><button className="my-items-report-button" onClick={() => navigate('/create-post')}>Report an item</button></div> : <div className="posts-grid my-items-posts-grid">{filtered.map(post => <PostCard key={post._id} post={post} showActions onDelete={id => setPosts(current => current.filter(item => item._id !== id))}/>)}</div>}
+    </main>
+  </div>;
 }

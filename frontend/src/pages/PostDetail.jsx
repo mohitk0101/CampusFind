@@ -203,6 +203,16 @@ export default function PostDetail() {
                     </div>
                   )}
 
+                  {post.status === 'active' && !CF.isLoggedIn() && (
+                    <div className="card mt-4" style={{ padding: '16px', background: 'var(--bg-elevated)', marginTop: '20px' }}>
+                      <div className="font-bold mb-2">Want to help reunite this item?</div>
+                      <p className="text-xs text-muted mb-3">You can browse details freely. Sign in only when you are ready to claim this item.</p>
+                      <button className="btn btn-primary btn-sm" onClick={() => navigate(`/auth?next=${encodeURIComponent(`/post-detail?id=${post._id}`)}`)}>
+                        {post.type === 'lost' ? 'Sign in to say I found this' : 'Sign in to claim this item'}
+                      </button>
+                    </div>
+                  )}
+
                   {post.status === 'active' && CF.isLoggedIn() && (
                     <div className="card mt-4" style={{ padding: '16px', background: 'var(--bg-elevated)', marginTop: '20px' }}>
                       <div className="font-bold mb-2">Exchange Resolution Status</div>
@@ -292,8 +302,8 @@ export default function PostDetail() {
                       </button>
                     </div>
                   )}
-                  {!CF.isLoggedIn() && (
-                    <span onClick={() => navigate('/auth')} className="btn btn-primary btn-block" style={{ cursor: 'pointer' }}>Login to Contact</span>
+                  {!CF.isLoggedIn() && post.status === 'active' && (
+                    <p className="text-sm text-muted">You can view this post without an account. Sign in when you are ready to claim the item.</p>
                   )}
                   {isOwner && (
                     <div className="chip" style={{ display: 'block', textAlign: 'center' }}>This is your post</div>

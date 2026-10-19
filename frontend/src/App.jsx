@@ -14,6 +14,9 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/browse" element={<Dashboard />} />
+        <Route path="/about" element={<Dashboard />} />
+        <Route path="/contact" element={<Dashboard />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/create-post" element={<CreatePost />} />
         <Route path="/post-detail" element={<PostDetail />} />

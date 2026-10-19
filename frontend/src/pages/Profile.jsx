@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CF } from '../utils/api';
 import Topbar from '../components/Topbar';
 import Sidebar from '../components/Sidebar';
+import { useAppContext } from '../context/AppContext';
 
 const ALL_CATEGORIES = [
   { name: 'Wallet',            icon: '👛' },
@@ -25,6 +26,7 @@ const ALL_CATEGORIES = [
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { logoutUser } = useAppContext();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'profile';
 
@@ -68,13 +70,23 @@ export default function Profile() {
         setMobile(u.mobile || '');
         setYear(u.year || '');
         setProfilePicture(u.profilePicture || '');
-        if (u.interestedCategories && u.interestedCategories.length > 0) {
+        // An empty array is a valid saved preference (Deselect All).
+        // Always sync the UI with the server, including when no categories are selected.
+        if (Array.isArray(u.interestedCategories)) {
           setInterestedCategories(u.interestedCategories);
+        } else {
+          setInterestedCategories(ALL_CATEGORIES.map(c => c.name));
         }
       } catch (e) { console.error(e); }
     };
     loadProfile();
   }, []);
+
+  const handleLogout = async () => {
+    if (!window.confirm('Are you sure you want to log out?')) return;
+    await logoutUser();
+    navigate('/');
+  };
 
   const handleProfileImage = async (e) => {
     const file = e.target.files[0];
@@ -111,6 +123,9 @@ export default function Profile() {
     } catch (err) { alert(err.message); }
     setIsSavingPass(false);
   };
+
+  const allCategoriesSelected = ALL_CATEGORIES.every(cat => interestedCategories.includes(cat.name));
+  const noCategoriesSelected = interestedCategories.length === 0;
 
   const toggleCategory = (name) => {
     setInterestedCategories(prev =>
@@ -149,11 +164,10 @@ export default function Profile() {
 
   return (
     <>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-content">
         <Topbar title="My Profile" onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className="page-body" style={{ maxWidth: '760px' }}>
+        <div className="page-body profile-page-body" style={{ maxWidth: '1200px' }}>
 
           {/* Profile header card */}
           <div className="profile-header-card" style={{ marginBottom: '24px' }}>
@@ -181,6 +195,7 @@ export default function Profile() {
                 Verified Student
               </div>
             </div>
+            <button type="button" className="profile-logout-button" onClick={handleLogout}>Log out</button>
           </div>
 
           {/* Tabs */}
@@ -276,14 +291,14 @@ export default function Profile() {
                     className="btn btn-ghost btn-sm"
                     onClick={() => setInterestedCategories(ALL_CATEGORIES.map(c => c.name))}
                   >
-                    ✅ Select All
+                    {allCategoriesSelected ? '☑' : '☐'} Select All
                   </button>
                   <button
                     type="button"
                     className="btn btn-ghost btn-sm"
                     onClick={() => setInterestedCategories([])}
                   >
-                    ☐ Deselect All
+                    {noCategoriesSelected ? '☑' : '☐'} Deselect All
                   </button>
                 </div>
               </div>

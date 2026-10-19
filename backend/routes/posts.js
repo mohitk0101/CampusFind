@@ -68,7 +68,7 @@ const parseImageOrder = (value) => {
 // @GET /api/posts - Get all approved posts with search and filter
 router.get('/', async (req, res) => {
   try {
-    const { search, category, type, location, dateFrom, dateTo, page = 1, limit = 20 } = req.query;
+    const { search, category, type, location, dateFrom, dateTo, sort = 'newest', page = 1, limit = 20 } = req.query;
     const query = { status: 'active' };
 
     if (search) {
@@ -90,7 +90,7 @@ router.get('/', async (req, res) => {
     const total = await Post.countDocuments(query);
     const posts = await Post.find(query)
       .populate('reporter', 'name rollNumber department year profilePicture')
-      .sort({ createdAt: -1 })
+      .sort({ createdAt: sort === 'oldest' ? 1 : -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .lean(); // Returns plain JS objects - 3-5x faster than Mongoose Documents for read-only routes

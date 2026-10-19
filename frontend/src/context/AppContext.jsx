@@ -32,7 +32,7 @@ export function AppProvider({ children }) {
   // Theme state
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
-    return saved === 'dark'; // default to false (light theme)
+    return saved ? saved === 'dark' : true; // premium dark mode by default
   });
 
   // Apply theme class to document body

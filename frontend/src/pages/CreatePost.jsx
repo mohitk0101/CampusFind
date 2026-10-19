@@ -8,11 +8,12 @@ export default function CreatePost() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
+  const initialType = searchParams.get('type');
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const [type, setType] = useState('lost');
+  const [type, setType] = useState(initialType === 'found' ? 'found' : 'lost');
   const [itemName, setItemName] = useState('');
   const [category, setCategory] = useState('');
   const [location, setLocation] = useState('');
@@ -27,7 +28,7 @@ export default function CreatePost() {
 
   useEffect(() => {
     if (!CF.isLoggedIn()) {
-      navigate('/auth');
+      navigate(`/auth?next=${encodeURIComponent(`/create-post${window.location.search}`)}`);
       return;
     }
 
@@ -146,7 +147,8 @@ export default function CreatePost() {
       <div className="main-content">
         <Topbar title={editId ? 'Edit Post' : 'Report Lost & Found Item'} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         
-        <div className="page-body" style={{ maxWidth: '760px' }}>
+        <div className="page-body report-page-body" style={{ maxWidth: '1120px' }}>
+          <div className="page-intro-row report-page-intro"><div><p className="public-eyebrow">CAMPUS COMMUNITY</p><h1>{editId ? 'Edit your report' : 'Report an Item'}</h1><p>Help your campus community by reporting a lost or found item.</p></div></div>
           <form onSubmit={handleSubmit} className="card">
             <div className="card-header">
               <div className="card-title">Item details & verification questions</div>
@@ -163,7 +165,7 @@ export default function CreatePost() {
                       checked={type === 'lost'}
                       onChange={() => setType('lost')}
                     />
-                    <span>🔴 Lost Item</span>
+                    <span>Lost Item</span>
                   </label>
                   <label className="flex items-center gap-2" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginLeft: '12px' }}>
                     <input 
@@ -173,7 +175,7 @@ export default function CreatePost() {
                       checked={type === 'found'}
                       onChange={() => setType('found')}
                     />
-                    <span>🟢 Found Item</span>
+                    <span>Found Item</span>
                   </label>
                 </div>
               </div>
@@ -280,7 +282,7 @@ export default function CreatePost() {
               </div>
 
               <div style={{ marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>🔒 Verification Questions</h3>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, marginBottom: '12px' }}>Verification Questions</h3>
                 <p className="text-xs text-muted mb-4">Set 3 questions that claimants must answer to prove ownership before they can contact you.</p>
                 
                 <div className="form-group">
@@ -319,7 +321,7 @@ export default function CreatePost() {
             <div className="card-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
               <button type="button" className="btn btn-ghost" onClick={() => navigate('/')}>Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={isLoading}>
-                {isLoading ? '⏳ Submitting...' : editId ? '💾 Save Changes' : '📤 Submit for Review'}
+                {isLoading ? 'Submitting...' : editId ? 'Save Changes' : 'Submit Report'}
               </button>
             </div>
           </form>

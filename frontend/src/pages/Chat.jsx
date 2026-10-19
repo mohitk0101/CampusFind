@@ -13,6 +13,7 @@ export default function Chat() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [conversations, setConversations] = useState([]);
+  const [conversationSearch, setConversationSearch] = useState('');
   const [activeConv, setActiveConv] = useState(null); // { postId, userId, otherUser, post }
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
@@ -60,6 +61,9 @@ export default function Chat() {
     try {
       const data = await CF.apiGet(`/messages/${conv.postId}/${conv.userId}`);
       setMessages(data.messages || []);
+      // The API marks incoming messages as read when this thread is fetched.
+      // Refresh the conversation list so its unread badge clears immediately.
+      await loadConversations();
       scrollToBottom();
     } catch (e) {
       console.error(e);
@@ -381,17 +385,18 @@ export default function Chat() {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-content">
         <Topbar title="Messages" onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-        <div className={`chat-layout ${activeConv ? 'has-active-conv' : ''}`} style={{ height: 'calc(100vh - var(--navbar-height))' }}>
+        <div className={`chat-layout ${activeConv ? 'has-active-conv' : ''}`}>
 
           {/* ── Conversations List ─────────────────────────────────────────── */}
           <div className="conversations-list">
-            <div style={{ padding: '16px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '14px' }}>
-              Conversations
+            <div className="conversation-list-heading">
+              <div><strong>Messages</strong><small>Chat about reported items</small></div>
+              <span>{conversations.length}</span>
             </div>
+            <label className="conversation-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input value={conversationSearch} onChange={event => setConversationSearch(event.target.value)} placeholder="Search conversations..." aria-label="Search conversations"/></label>
             <div id="conv-items" style={{ overflowY: 'auto', flex: 1 }}>
               {isLoadingConvs ? (
                 <div style={{ padding: '8px 16px' }}>
@@ -412,7 +417,11 @@ export default function Chat() {
                   <div className="empty-text">Start a conversation by contacting a post reporter.</div>
                 </div>
               ) : (
-                conversations.map(conv => {
+                conversations.filter(conv => {
+                  const term = conversationSearch.trim().toLowerCase();
+                  if (!term) return true;
+                  return [conv.otherUser?.name, conv.post?.itemName, conv.lastMessage?.text].some(value => String(value || '').toLowerCase().includes(term));
+                }).map(conv => {
                   const isActive = activeConv && activeConv.postId === conv.post?._id && activeConv.userId === conv.otherUser?._id;
                   const initials = CF.getInitials(conv.otherUser?.name || 'U');
                   return (

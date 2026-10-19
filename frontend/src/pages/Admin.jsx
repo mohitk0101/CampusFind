@@ -96,9 +96,8 @@ export default function Admin() {
 
   return (
     <>
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-content">
-        <Topbar title="⚡ Administration Console" onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+        <Topbar title="Administration Console" onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         
         <div className="page-body">
           {isLoading ? (
