@@ -2,6 +2,8 @@
 
 Lost and found portal for NIT Kurukshetra. Students can report lost or found items, verify ownership through custom questions, chat with other users, and manage active listings.
 
+( For Demo :: Mail : demo@nitkkr.ac.in, Password : demo123)
+
 ## Features
 
 1. **Student Authentication:** You can sign up and log in securely using your official college email.
